@@ -119,8 +119,8 @@ export function PullToRefreshWrapper({
     >
       {/* Pull-to-refresh indicator */}
       <AnimatePresence>
-        {showIndicator && (
-          <motion.div
+      {showIndicator && (
+        <motion.div
             initial={{ opacity: 0, y: -40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -40 }}
@@ -129,7 +129,7 @@ export function PullToRefreshWrapper({
           >
             {/* Indicator Pill */}
             <motion.div
-              style={{ 
+              style={{
                 opacity: refreshState === "refreshing" || refreshState === "success" ? 1 : indicatorOpacity,
                 scale: refreshState === "refreshing" || refreshState === "success" ? 1 : indicatorScale,
               }}
@@ -146,7 +146,7 @@ export function PullToRefreshWrapper({
               <span className={`text-sm font-medium ${stateConfig.color}`}>
                 {stateConfig.text}
               </span>
-            </motion.div>
+        </motion.div>
 
             {/* Progress Ring (only in pulling state) */}
             {refreshState === "pulling" && (
@@ -178,8 +178,8 @@ export function PullToRefreshWrapper({
                 />
               </motion.svg>
             )}
-          </motion.div>
-        )}
+        </motion.div>
+      )}
       </AnimatePresence>
 
       {/* Content with pull effect */}

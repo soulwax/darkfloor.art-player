@@ -55,7 +55,7 @@ export function haptic(pattern: HapticPattern = "light"): void {
 
   try {
     const vibrationPattern = patterns[pattern];
-    navigator.vibrate(vibrationPattern);
+      navigator.vibrate(vibrationPattern);
   } catch {
     // Silently fail if vibration fails
     // Don't log in production to avoid console spam

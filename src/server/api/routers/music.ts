@@ -13,8 +13,8 @@ import {
   listeningHistory,
   playbackState,
   playerSessions,
-  playlists,
   playlistTracks,
+  playlists,
   recommendationCache,
   recommendationLogs,
   searchHistory,
@@ -23,7 +23,9 @@ import {
 } from "@/server/db/schema";
 import {
   fetchDeezerRecommendations,
+  fetchEnhancedRecommendations,
   fetchHybridRecommendations,
+  fetchMultiSeedRecommendations,
   filterRecommendations,
   getCacheExpiryDate,
   shuffleWithDiversity,
@@ -1188,12 +1190,13 @@ export const musicRouter = createTRPCRouter({
         trackId: z.number(),
         limit: z.number().min(1).max(50).default(5),
         excludeTrackIds: z.array(z.number()).optional(),
+        similarityLevel: z.enum(["strict", "balanced", "diverse"]).default("balanced"),
+        useEnhanced: z.boolean().default(true),
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Simple wrapper around getRecommendations for UI clarity
       return ctx.db.transaction(async () => {
-        // Check cache first
+        // Check cache first (basic recommendations can be cached)
         const cached = await ctx.db.query.recommendationCache.findFirst({
           where: and(
             eq(recommendationCache.seedTrackId, input.trackId),
@@ -1201,7 +1204,8 @@ export const musicRouter = createTRPCRouter({
           ),
         });
 
-        if (cached) {
+        // For non-enhanced mode, use cached results if available
+        if (!input.useEnhanced && cached) {
           let tracks = cached.recommendedTracksData as Track[];
 
           if (input.excludeTrackIds && input.excludeTrackIds.length > 0) {
@@ -1211,26 +1215,108 @@ export const musicRouter = createTRPCRouter({
           return tracks.slice(0, input.limit);
         }
 
-        // Fetch from Deezer
-        const recommendations = await fetchDeezerRecommendations(
-          input.trackId,
-          input.limit + 5,
-        );
+        // NON-ENHANCED MODE: Use basic Deezer recommendations (cacheable)
+        if (!input.useEnhanced) {
+          const recommendations = await fetchDeezerRecommendations(
+            input.trackId,
+            input.limit + 5,
+          );
 
-        const filtered = filterRecommendations(recommendations, {
-          excludeTrackIds: input.excludeTrackIds,
+          const filtered = filterRecommendations(recommendations, {
+            excludeTrackIds: [
+              ...(input.excludeTrackIds ?? []),
+              input.trackId,
+            ],
+          });
+
+          // Cache basic recommendations for faster subsequent requests
+          if (filtered.length > 0 && !cached) {
+            try {
+              await ctx.db.insert(recommendationCache).values({
+                seedTrackId: input.trackId,
+                recommendedTrackIds: filtered.map((t) => t.id) as unknown as Record<string, unknown>,
+                recommendedTracksData: filtered as unknown as Record<string, unknown>,
+                source: "deezer",
+                expiresAt: getCacheExpiryDate(),
+              });
+            } catch {
+              // Cache insert may fail if there's a conflict, that's okay
+            }
+          }
+
+          return filtered.slice(0, input.limit);
+        }
+
+        // ENHANCED MODE: Use personalized recommendations (not cached)
+        // Fetch seed track details from Deezer
+        let seedTrack: Track | null = null;
+        try {
+          const response = await fetch(`https://api.deezer.com/track/${input.trackId}`);
+          if (response.ok) {
+            seedTrack = await response.json() as Track;
+          }
+        } catch (error) {
+          console.error("[getSimilarTracks] Error fetching seed track:", error);
+        }
+
+        if (!seedTrack) {
+          // Fallback to basic recommendations if we can't get seed track
+          const recommendations = await fetchDeezerRecommendations(
+            input.trackId,
+            input.limit + 5,
+          );
+          return filterRecommendations(recommendations, {
+            excludeTrackIds: [
+              ...(input.excludeTrackIds ?? []),
+              input.trackId, // Exclude the seed track itself
+            ],
+          }).slice(0, input.limit);
+        }
+
+        // Get user's favorite artist IDs for personalization
+        const userFavorites = await ctx.db.query.favorites.findMany({
+          where: eq(favorites.userId, ctx.session.user.id),
+          limit: 100,
+        });
+        
+        const userFavoriteArtistIds = [...new Set(
+          userFavorites
+            .map(f => (f.trackData as Track | null)?.artist?.id)
+            .filter((id): id is number => typeof id === "number")
+        )];
+
+        // Get recently played track IDs to avoid repeats
+        const recentHistory = await ctx.db.query.listeningHistory.findMany({
+          where: eq(listeningHistory.userId, ctx.session.user.id),
+          orderBy: desc(listeningHistory.playedAt),
+          limit: 50,
+        });
+        const recentlyPlayedTrackIds = recentHistory.map(h => h.trackId);
+
+        console.log("[getSimilarTracks] Enhanced recommendations:", {
+          seedTrack: `${seedTrack.title} - ${seedTrack.artist.name}`,
+          similarityLevel: input.similarityLevel,
+          userFavoriteArtists: userFavoriteArtistIds.length,
+          recentlyPlayed: recentlyPlayedTrackIds.length,
         });
 
-        // Cache the results
-        if (filtered.length > 0) {
-          await ctx.db.insert(recommendationCache).values({
-            seedTrackId: input.trackId,
-            recommendedTrackIds: filtered.map((t) => t.id) as unknown as Record<string, unknown>,
-            recommendedTracksData: filtered as unknown as Record<string, unknown>,
-            source: "deezer",
-            expiresAt: getCacheExpiryDate(),
-          });
-        }
+        // Use enhanced personalized recommendations
+        const recommendations = await fetchEnhancedRecommendations(seedTrack, {
+          userFavoriteArtistIds,
+          recentlyPlayedTrackIds,
+          similarityLevel: input.similarityLevel,
+          limit: input.limit + 10, // Fetch extra to allow filtering
+        });
+
+        const filtered = filterRecommendations(recommendations, {
+          excludeTrackIds: [
+            ...(input.excludeTrackIds ?? []),
+            input.trackId, // Also exclude the seed track
+          ],
+        });
+
+        // Enhanced recommendations are personalized, so we don't cache them
+        // (they would be stale for future requests with different user state)
 
         return filtered.slice(0, input.limit);
       });
@@ -1336,28 +1422,74 @@ export const musicRouter = createTRPCRouter({
           totalCandidates: candidateTracks.length,
         };
       } catch (error) {
-        console.error("[SmartMix] Error generating mix:", error);
+        console.error("[SmartMix] Error generating mix, using enhanced fallback:", error);
         
-        // Fallback to old method
-        const allRecommendations: Track[] = [];
-        const seenTrackIds = new Set<number>(input.seedTrackIds);
+        // Fallback to enhanced multi-seed recommendations
+        // Get user's favorite artist IDs for personalization
+        const userFavorites = await ctx.db.query.favorites.findMany({
+          where: eq(favorites.userId, ctx.session.user.id),
+          limit: 100,
+        });
+        
+        const userFavoriteArtistIds = [...new Set(
+          userFavorites
+            .map(f => (f.trackData as Track | null)?.artist?.id)
+            .filter((id): id is number => typeof id === "number")
+        )];
 
-        for (const seedTrackId of input.seedTrackIds) {
-          const recs = await fetchDeezerRecommendations(seedTrackId, 20);
-          for (const track of recs) {
-            if (!seenTrackIds.has(track.id)) {
-              allRecommendations.push(track);
-              seenTrackIds.add(track.id);
+        // Fetch seed tracks if not already available
+        const seedTracksForFallback: Track[] = [];
+        for (const trackId of input.seedTrackIds) {
+          try {
+            const response = await fetch(`https://api.deezer.com/track/${trackId}`);
+            if (response.ok) {
+              const track = await response.json() as Track;
+              seedTracksForFallback.push(track);
             }
+          } catch {
+            // Skip failed fetches
           }
         }
 
-        const finalMix = shuffleWithDiversity(allRecommendations).slice(0, input.limit);
+        if (seedTracksForFallback.length === 0) {
+          // Ultimate fallback - just use Deezer radio
+          const allRecommendations: Track[] = [];
+          const seenTrackIds = new Set<number>(input.seedTrackIds);
+
+          for (const seedTrackId of input.seedTrackIds) {
+            const recs = await fetchDeezerRecommendations(seedTrackId, 20);
+            for (const track of recs) {
+              if (!seenTrackIds.has(track.id)) {
+                allRecommendations.push(track);
+                seenTrackIds.add(track.id);
+              }
+            }
+          }
+
+          const finalMix = shuffleWithDiversity(allRecommendations).slice(0, input.limit);
+
+          return {
+            tracks: finalMix,
+            seedCount: input.seedTrackIds.length,
+            totalCandidates: allRecommendations.length,
+          };
+        }
+
+        // Use the new multi-seed recommendations
+        const diversityWeight = input.diversity === "diverse" ? 0.8 
+                              : input.diversity === "strict" ? 0.2 
+                              : 0.5;
+
+        const multiSeedRecs = await fetchMultiSeedRecommendations(seedTracksForFallback, {
+          userFavoriteArtistIds,
+          limit: input.limit,
+          diversityWeight,
+        });
 
         return {
-          tracks: finalMix,
-          seedCount: input.seedTrackIds.length,
-          totalCandidates: allRecommendations.length,
+          tracks: multiSeedRecs,
+          seedCount: seedTracksForFallback.length,
+          totalCandidates: multiSeedRecs.length,
         };
       }
     }),

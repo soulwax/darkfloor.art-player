@@ -136,9 +136,9 @@ function SearchPageContent() {
   }
 
   const searchContent = (
-    <div className="flex min-h-screen flex-col">
-      <main className="container mx-auto w-full flex-1 py-6 md:py-8">
-        {/* Hero Section */}
+      <div className="flex min-h-screen flex-col">
+        <main className="container mx-auto w-full flex-1 py-6 md:py-8">
+          {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -146,14 +146,14 @@ function SearchPageContent() {
           className="mb-6 text-center md:mb-10"
         >
           <h1 className="accent-gradient mb-3 text-2xl font-bold md:text-4xl">
-            Discover Your Next Favorite Track
-          </h1>
+              Discover Your Next Favorite Track
+            </h1>
           <p className="text-sm text-[var(--color-subtext)] md:text-base">
             Search 50 million+ tracks. Log in for playlists and more.
-          </p>
+            </p>
         </motion.div>
 
-        {/* Search Card */}
+          {/* Search Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,57 +182,57 @@ function SearchPageContent() {
               <div className="flex items-center gap-3 md:flex-row">
                 <div className="flex flex-1 items-center gap-3 rounded-xl border border-[rgba(244,178,102,0.15)] bg-[rgba(18,26,38,0.9)] px-4 py-3 transition-all focus-within:border-[rgba(244,178,102,0.4)] focus-within:shadow-[0_0_0_4px_rgba(244,178,102,0.1)]">
                   <Search className="h-5 w-5 flex-shrink-0 text-[var(--color-muted)]" />
-                  <input
+                <input
                     className="min-w-0 flex-1 bg-transparent text-base text-[var(--color-text)] placeholder-[var(--color-muted)] outline-none"
-                    placeholder="Search for songs, artists, or albums..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
-                  />
-                </div>
-                <button
-                  className="btn-primary touch-target-lg flex items-center justify-center gap-2 px-8"
-                  onClick={() => void handleSearch()}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <div className="spinner spinner-sm" />
-                      <span>Searching...</span>
-                    </>
-                  ) : (
-                    "Search"
-                  )}
-                </button>
+                  placeholder="Search for songs, artists, or albums..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void handleSearch()}
+                />
               </div>
+              <button
+                  className="btn-primary touch-target-lg flex items-center justify-center gap-2 px-8"
+                onClick={() => void handleSearch()}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                      <div className="spinner spinner-sm" />
+                    <span>Searching...</span>
+                  </>
+                ) : (
+                  "Search"
+                )}
+              </button>
+            </div>
 
-              {session && recentSearches && recentSearches.length > 0 && (
+            {session && recentSearches && recentSearches.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-[var(--color-subtext)]">
-                    Recent:
-                  </span>
-                  {recentSearches.map((search) => (
-                    <button
-                      key={search}
+                <span className="text-sm font-medium text-[var(--color-subtext)]">
+                  Recent:
+                </span>
+                {recentSearches.map((search) => (
+                  <button
+                    key={search}
                       onClick={() => {
                         hapticLight();
                         void handleSearch(search);
                       }}
                       className="touch-active rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-sm text-[var(--color-text)] ring-1 ring-white/5 transition-all hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-accent-light)] hover:ring-[var(--color-accent)]/30"
-                    >
-                      {search}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                  >
+                    {search}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           )}
         </motion.div>
 
         {/* Results Section */}
-        <div className="w-full">
+            <div className="w-full">
           <AnimatePresence mode="wait">
-            {results.length > 0 ? (
+              {results.length > 0 ? (
               <motion.div
                 key="results"
                 initial={{ opacity: 0 }}
@@ -241,19 +241,19 @@ function SearchPageContent() {
                 transition={{ duration: 0.2 }}
               >
                 <div className="mb-4 flex items-center justify-between md:mb-5">
-                  <div>
+                    <div>
                     <h2 className="text-lg font-bold text-[var(--color-text)] md:text-2xl">
-                      Search Results
-                    </h2>
+                        Search Results
+                      </h2>
                     <p className="mt-0.5 text-xs text-[var(--color-subtext)] md:mt-1 md:text-sm">
-                      {results.length.toLocaleString()}
-                      {total > results.length
-                        ? ` of ${total.toLocaleString()}`
-                        : ""}{" "}
-                      tracks found
-                    </p>
+                        {results.length.toLocaleString()}
+                        {total > results.length
+                          ? ` of ${total.toLocaleString()}`
+                          : ""}{" "}
+                        tracks found
+                      </p>
+                    </div>
                   </div>
-                </div>
 
                 <motion.div
                   variants={staggerContainer}
@@ -271,33 +271,33 @@ function SearchPageContent() {
                         index={index}
                       />
                     </motion.div>
-                  ))}
+                    ))}
                 </motion.div>
 
-                {hasMore && (
+                  {hasMore && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="mt-6 flex justify-center md:mt-8"
                   >
-                    <button
-                      onClick={() => void handleLoadMore()}
-                      disabled={loadingMore}
-                      className="btn-primary touch-target-lg flex w-full items-center justify-center gap-2 md:w-auto md:px-12"
-                    >
-                      {loadingMore ? (
-                        <>
+                      <button
+                        onClick={() => void handleLoadMore()}
+                        disabled={loadingMore}
+                        className="btn-primary touch-target-lg flex w-full items-center justify-center gap-2 md:w-auto md:px-12"
+                      >
+                        {loadingMore ? (
+                          <>
                           <div className="spinner spinner-sm" />
-                          <span>Loading...</span>
-                        </>
-                      ) : (
-                        `Load More (${(total - results.length).toLocaleString()} remaining)`
-                      )}
-                    </button>
+                            <span>Loading...</span>
+                          </>
+                        ) : (
+                          `Load More (${(total - results.length).toLocaleString()} remaining)`
+                        )}
+                      </button>
                   </motion.div>
-                )}
+                  )}
               </motion.div>
-            ) : (
+              ) : (
               <motion.div
                 key="empty"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -321,8 +321,8 @@ function SearchPageContent() {
                   <Music2 className="h-10 w-10 text-[var(--color-accent)] md:h-12 md:w-12" />
                 </motion.div>
                 <h3 className="mb-2 text-lg font-bold text-[var(--color-text)] md:text-xl">
-                  Explore Starchild Music
-                </h3>
+                    Explore Starchild Music
+                  </h3>
                 <p className="max-w-md px-4 text-sm text-[var(--color-subtext)] md:text-base">
                   Search for songs, artists, albums - anything you want to listen to.
                 </p>
@@ -346,11 +346,11 @@ function SearchPageContent() {
                   ))}
                 </div>
               </motion.div>
-            )}
+              )}
           </AnimatePresence>
-        </div>
-      </main>
-    </div>
+          </div>
+        </main>
+      </div>
   );
 
   // Wrap with pull-to-refresh on mobile
@@ -359,7 +359,7 @@ function SearchPageContent() {
       <PullToRefreshWrapper onRefresh={handleRefresh} enabled={!!currentQuery}>
         {searchContent}
       </PullToRefreshWrapper>
-    );
+  );
   }
 
   return searchContent;
