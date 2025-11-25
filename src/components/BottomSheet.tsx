@@ -2,11 +2,11 @@
 
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } from "framer-motion";
-import { springPresets } from "@/utils/spring-animations";
 import { hapticLight, hapticMedium } from "@/utils/haptics";
+import { springPresets } from "@/utils/spring-animations";
+import { AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
 import { X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -123,7 +123,7 @@ export default function BottomSheet({
     currentSnapIndex.current = snapPoints.length - 1;
   };
 
-  const showHeader = title ?? showCloseButton;
+  const showHeader = Boolean(title) || showCloseButton;
 
   return (
     <AnimatePresence>
