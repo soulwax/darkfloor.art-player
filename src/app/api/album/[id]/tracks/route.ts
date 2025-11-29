@@ -48,7 +48,6 @@ export async function GET(
     // Try to get album info if available
     if (albumResponse.ok) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         albumData = await albumResponse.json() as AlbumData;
       } catch (err) {
         console.warn("[Album Tracks API] Failed to parse album info:", err);
@@ -59,35 +58,47 @@ export async function GET(
     const albumIdValue = albumData?.id;
     const albumTitleValue = albumData?.title;
 
-    // Enrich tracks with album info if available
+    // Try to create album info if we have the required data
+    // If album data is missing, we'll still return tracks but they may not have album info enriched
+    let albumInfo: { id: number; title: string; cover: string; cover_small: string; cover_medium: string; cover_big: string; cover_xl: string; md5_image: string; tracklist: string; type: "album" } | null = null;
+    
+    if (albumData && typeof albumIdValue === "number" && typeof albumTitleValue === "string") {
+      // Create album info object once for reuse
+      albumInfo = {
+        id: albumIdValue,
+        title: String(albumTitleValue),
+        cover: String(albumData.cover ?? ""),
+        cover_small: String(albumData.cover_small ?? ""),
+        cover_medium: String(albumData.cover_medium ?? ""),
+        cover_big: String(albumData.cover_big ?? ""),
+        cover_xl: String(albumData.cover_xl ?? ""),
+        md5_image: String(albumData.md5_image ?? ""),
+        tracklist: `https://api.deezer.com/album/${albumId}/tracks`,
+        type: "album" as const,
+      };
+    } else {
+      console.warn("[Album Tracks API] Album data unavailable - returning tracks without enrichment");
+    }
+
+    // Enrich tracks with album info if available, otherwise return tracks as-is
+    // Note: Tracks from Deezer API may already have album info, so we preserve it if present
     const enrichedTracks = (tracksData.data || []).map((track: unknown) => {
-      if (albumData && typeof track === "object" && track !== null && 
-          typeof albumIdValue === "number" && typeof albumTitleValue === "string") {
-        const trackObj = track as { album?: unknown; [key: string]: unknown };
-        // Only add album info if it's missing
-        if (!trackObj.album) {
-          // Create a properly typed album object
-          // All values are safely converted to strings with fallbacks
-          /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-          const albumInfo = {
-            id: albumIdValue,
-            title: String(albumTitleValue),
-            cover: String(albumData.cover ?? ""),
-            cover_small: String(albumData.cover_small ?? ""),
-            cover_medium: String(albumData.cover_medium ?? ""),
-            cover_big: String(albumData.cover_big ?? ""),
-            cover_xl: String(albumData.cover_xl ?? ""),
-            md5_image: String(albumData.md5_image ?? ""),
-            tracklist: `https://api.deezer.com/album/${albumId}/tracks`,
-            type: "album" as const,
-          };
-          /* eslint-enable @typescript-eslint/no-unsafe-assignment */
-          // Use spread operator to create a new object with album property
-          return { ...trackObj, album: albumInfo };
-        }
+      if (typeof track !== "object" || track === null) {
+        console.warn("[Album Tracks API] Invalid track data:", track);
+        return null;
       }
-      return track;
-    });
+      
+      const trackObj = track as { album?: unknown; [key: string]: unknown };
+      
+      // If we have album info and the track doesn't have it, add it
+      // If track already has album info, preserve it (it might be more complete)
+      if (albumInfo && !trackObj.album) {
+        return { ...trackObj, album: albumInfo };
+      }
+      
+      // Return track as-is (either has album info already, or we couldn't enrich it)
+      return trackObj;
+    }).filter((track): track is NonNullable<typeof track> => track !== null);
 
     console.log(`[Album Tracks API] Successfully fetched ${enrichedTracks.length} tracks for album ${albumId}`);
     

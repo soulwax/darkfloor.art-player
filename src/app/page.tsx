@@ -32,6 +32,8 @@ function SearchPageContent() {
   const [total, setTotal] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isArtistSearch, setIsArtistSearch] = useState(false);
+  const [apiOffset, setApiOffset] = useState(0); // Track actual API offset for artist searches
 
   const player = useGlobalPlayer();
 
@@ -51,6 +53,8 @@ function SearchPageContent() {
 
       setLoading(true);
       setCurrentQuery(searchQuery);
+      setIsArtistSearch(false); // Regular search, not artist-specific
+      setApiOffset(0); // Reset API offset for regular search
 
       try {
         const response = await searchTracks(searchQuery, 0);
@@ -64,6 +68,7 @@ function SearchPageContent() {
         console.error("Search failed:", error);
         setResults([]);
         setTotal(0);
+        setApiOffset(0);
       } finally {
         setLoading(false);
       }
@@ -73,6 +78,8 @@ function SearchPageContent() {
 
   const handleAlbumClick = useCallback(async (albumId: number) => {
     setLoading(true);
+    setIsArtistSearch(false); // Album search, not artist-specific
+    setApiOffset(0); // Reset API offset for album search
     
     try {
       const response = await getAlbumTracks(albumId);
@@ -172,14 +179,56 @@ function SearchPageContent() {
   const handleLoadMore = async () => {
     if (!currentQuery.trim() || loadingMore) return;
 
-    const nextOffset = results.length;
-    if (nextOffset >= total) return;
-
     setLoadingMore(true);
 
     try {
-      const response = await searchTracks(currentQuery, nextOffset);
-      setResults((prev) => [...prev, ...response.data]);
+      if (isArtistSearch) {
+        // For artist searches, we need to use the API offset (not filtered result count)
+        // since filtering happens client-side. Use the tracked API offset.
+        const currentApiOffset = apiOffset;
+        const response = await searchTracksByArtist(currentQuery, currentApiOffset);
+        
+        // The API typically returns 25 results per page. Since we filter client-side,
+        // we don't know exactly how many API results were returned, but we need to
+        // increment by the standard page size to avoid overlapping results.
+        // If we got filtered results, we know the API returned at least a full page.
+        // If we got no filtered results but there's a next page, the API still returned results.
+        const API_PAGE_SIZE = 25; // Standard Deezer API page size
+        const newApiOffset = currentApiOffset + API_PAGE_SIZE;
+        
+        // Append new filtered results
+        setResults((prev) => {
+          const newResults = [...prev, ...response.data];
+          
+          // Update total based on new results - use the actual new length, not stale state
+          if (!response.next || response.data.length === 0) {
+            // No more results or no more matches, set total to actual filtered count
+            setTotal(newResults.length);
+          } else {
+            // Keep the API total so we know there might be more pages
+            setTotal(response.total);
+          }
+          
+          return newResults;
+        });
+        
+        // Update API offset for next pagination
+        setApiOffset(newApiOffset);
+      } else {
+        // Regular search - use filtered result count as offset
+        const nextOffset = results.length;
+        if (nextOffset >= total) {
+          setLoadingMore(false);
+          return;
+        }
+        
+        const response = await searchTracks(currentQuery, nextOffset);
+        setResults((prev) => [...prev, ...response.data]);
+        // Update total if it changed
+        if (response.total !== total) {
+          setTotal(response.total);
+        }
+      }
     } catch (error) {
       console.error("Load more failed:", error);
     } finally {
@@ -197,11 +246,17 @@ function SearchPageContent() {
     setLoading(true);
     setQuery(artistName);
     setCurrentQuery(artistName);
+    setIsArtistSearch(true); // Mark as artist search mode
+    setApiOffset(0); // Reset API offset for new artist search
     
     try {
       const response = await searchTracksByArtist(artistName, 0);
       setResults(response.data);
       setTotal(response.total);
+      
+      // Update API offset - first page is always 25 results from the API
+      const API_PAGE_SIZE = 25;
+      setApiOffset(API_PAGE_SIZE);
       
       // Update URL
       const params = new URLSearchParams();
@@ -215,6 +270,7 @@ function SearchPageContent() {
       console.error("Artist search failed:", error);
       setResults([]);
       setTotal(0);
+      setApiOffset(0);
     } finally {
       setLoading(false);
     }

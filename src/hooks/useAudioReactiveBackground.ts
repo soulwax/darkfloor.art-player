@@ -101,7 +101,7 @@ export function useAudioReactiveBackground(
     if (!visualizer.isInitialized && audioElement) {
       visualizer.initialize();
       // Try to resume context if suspended
-      visualizer.resumeContext();
+      void visualizer.resumeContext();
     }
 
     // Start the animation loop only if initialized

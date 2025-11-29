@@ -33,11 +33,11 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Dynamic import for visualizer
-const AudioVisualizer = dynamic(
-  () => import("./AudioVisualizer").then((mod) => mod.AudioVisualizer),
-  { ssr: false },
-);
+// Dynamic import for visualizer - DISABLED (keeping for future use)
+// const AudioVisualizer = dynamic(
+//   () => import("./AudioVisualizer").then((mod) => mod.AudioVisualizer),
+//   { ssr: false },
+// );
 
 interface MobilePlayerProps {
   currentTrack: Track | null;

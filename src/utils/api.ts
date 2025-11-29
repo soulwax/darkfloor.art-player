@@ -22,8 +22,11 @@ export async function searchTracks(query: string, offset = 0): Promise<SearchRes
 
 /**
  * Search for tracks by artist name, sorted by popularity (descending).
+ * Note: This function filters results client-side, so pagination is approximate.
+ * The offset parameter refers to the API offset, not the filtered result offset.
+ * 
  * @param artistName Artist name to search for.
- * @param offset Optional result offset for pagination (default: 0).
+ * @param offset Optional result offset for pagination (default: 0). This is the API offset, not filtered offset.
  * @returns SearchResponse with tracks sorted by popularity.
  */
 export async function searchTracksByArtist(artistName: string, offset = 0): Promise<SearchResponse> {
@@ -42,10 +45,20 @@ export async function searchTracksByArtist(artistName: string, offset = 0): Prom
     .filter(track => track.artist.name.toLowerCase() === artistName.toLowerCase())
     .sort((a, b) => b.rank - a.rank);
   
+  // For pagination: Since we're filtering client-side, we can't know the true total
+  // without fetching all pages. We return the filtered results from this page.
+  // The caller should accumulate results and handle pagination accordingly.
+  // We include 'next' if the API has more results AND we got some filtered results
+  // (indicating there might be more matches in subsequent pages).
+  const hasMore = response.next && (filtered.length > 0 || response.data.length > 0);
+  
   return {
     data: filtered,
-    total: filtered.length,
-    next: response.next,
+    // Return the API's total (not filtered total) so caller knows there might be more pages to fetch
+    // The actual filtered total will be discovered as we paginate
+    total: response.total,
+    // Include next if there are more API results to check
+    next: hasMore ? response.next : undefined,
   };
 }
 
@@ -59,17 +72,36 @@ export async function getAlbumTracks(albumId: number): Promise<SearchResponse> {
   const url = `/api/album/${albumId}/tracks`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch album tracks (${res.status})`);
-  const data = await res.json() as { data: Track[] };
+  const data = await res.json() as { data: unknown[] };
   
   // Tracks from Deezer album API are already in album order (by track position)
-  // Note: Some tracks may not have the album property populated
-  const tracks = (data.data || []).map((track) => {
-    // Ensure album property exists - if missing, we'll handle it in the UI
-    if (!track.album && track.id) {
-      // Track exists but album info is missing - this is expected for some Deezer responses
-      return track;
+  // The backend endpoint should ensure all tracks have album info, but we validate here
+  const tracks = (data.data || []).map((track): Track => {
+    // Type guard to ensure we have a valid track object
+    if (typeof track !== "object" || track === null) {
+      throw new Error("Invalid track data received from API");
     }
-    return track;
+    
+    const trackObj = track as Partial<Track> & Record<string, unknown>;
+    
+    // Ensure album property exists - if missing, this is a backend bug that should be fixed
+    // For now, we'll throw an error to catch this issue early
+    if (!trackObj.album) {
+      console.error("Track missing album property:", trackObj);
+      throw new Error(`Track ${trackObj.id ?? "unknown"} is missing required album property`);
+    }
+    
+    // Validate that all required Track properties are present
+    if (
+      typeof trackObj.id !== "number" ||
+      typeof trackObj.title !== "string" ||
+      !trackObj.artist ||
+      !trackObj.album
+    ) {
+      throw new Error(`Track ${trackObj.id ?? "unknown"} is missing required properties`);
+    }
+    
+    return trackObj as Track;
   });
   
   return {
