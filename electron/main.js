@@ -47,6 +47,11 @@ const findAvailablePort = (startPort) => {
   });
 };
 
+/**
+ * @param {number} port
+ * @param {number} maxAttempts
+ * @returns {Promise<boolean>}
+ */
 const waitForServer = (port, maxAttempts = 30) => {
   return new Promise((resolve) => {
     let attempts = 0;
@@ -174,9 +179,10 @@ const createWindow = async () => {
       log(`Will load URL: ${serverUrl}`);
     } catch (err) {
       log("FATAL ERROR starting server:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       dialog.showErrorBox(
         "Server Start Failed",
-        `Failed to start the application server:\n\n${err.message}\n\nCheck the console for details.`,
+        `Failed to start the application server:\n\n${errorMessage}\n\nCheck the console for details.`,
       );
       app.quit();
       return;
