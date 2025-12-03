@@ -344,9 +344,12 @@ export const musicRouter = createTRPCRouter({
       },
     });
 
-    return playlists.map((playlist) => ({
+    type PlaylistWithTracksQuery = typeof playlists[number];
+    type PlaylistTrackQuery = NonNullable<PlaylistWithTracksQuery["tracks"]>[number];
+
+    return playlists.map((playlist: PlaylistWithTracksQuery) => ({
       ...playlist,
-      tracks: playlist.tracks.map((t: { id: number; trackData: unknown; position: number; addedAt: Date }) => ({
+      tracks: (playlist.tracks ?? []).map((t: PlaylistTrackQuery) => ({
         id: t.id,
         track: t.trackData as Track,
         position: t.position,
