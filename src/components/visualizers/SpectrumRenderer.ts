@@ -10,6 +10,7 @@ export class SpectrumRenderer {
   private peakDecay: number[] = [];
   private noise: PerlinNoise;
   private time = 0;
+  private kaleidoscopeRotation = 0;
   private metaballs: Array<{ x: number; y: number; radius: number; vx: number; vy: number }> = [];
 
   constructor(barCount = 64, barGap = 2) {
@@ -33,6 +34,7 @@ export class SpectrumRenderer {
 
   public render(ctx: CanvasRenderingContext2D, data: Uint8Array, canvas: HTMLCanvasElement): void {
     this.time += 0.03;
+    this.kaleidoscopeRotation += 0.012; // Rotate the entire kaleidoscope
 
     // Update metaballs
     this.metaballs.forEach(ball => {
@@ -83,18 +85,32 @@ export class SpectrumRenderer {
     }
     ctx.putImageData(imageData, 0, 0);
 
-    // Kaleidoscope effect - save context for symmetry - more segments
+    // Kaleidoscope effect - save context for symmetry - many more segments
     ctx.save();
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const segments = 10; // More segments for more kaleidoscopic effect
+    const segments = 18; // Many more segments for strong kaleidoscopic effect
 
     for (let seg = 0; seg < segments; seg++) {
       ctx.save();
       ctx.translate(centerX, centerY);
-      ctx.rotate((seg * Math.PI * 2) / segments);
-      ctx.scale(seg % 2 === 0 ? 1 : -1, 1); // Mirror alternate segments
+      ctx.rotate((seg * Math.PI * 2) / segments + this.kaleidoscopeRotation); // Add rotation
+      // More complex mirroring pattern
+      const mirrorX = seg % 4 < 2 ? 1 : -1;
+      const mirrorY = seg % 2 === 0 ? 1 : -1;
+      ctx.scale(mirrorX, mirrorY);
       ctx.translate(-centerX, -centerY);
+      
+      // Clip to segment for cleaner edges
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      const angle1 = (seg * Math.PI * 2) / segments;
+      const angle2 = ((seg + 1) * Math.PI * 2) / segments;
+      const radius = Math.max(canvas.width, canvas.height);
+      ctx.lineTo(centerX + Math.cos(angle1) * radius, centerY + Math.sin(angle1) * radius);
+      ctx.lineTo(centerX + Math.cos(angle2) * radius, centerY + Math.sin(angle2) * radius);
+      ctx.closePath();
+      ctx.clip();
 
       const barWidth = (canvas.width - this.barGap * (this.barCount - 1)) / this.barCount;
       const dataStep = Math.floor(data.length / this.barCount);

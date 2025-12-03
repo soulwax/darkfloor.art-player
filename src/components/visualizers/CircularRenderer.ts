@@ -4,6 +4,7 @@ export class CircularRenderer {
   private rotationOffset = 0;
   private pulsePhase = 0;
   private peakHistory: number[] = [];
+  private kaleidoscopeRotation = 0;
 
   constructor(barCount = 64) {
     this.peakHistory = new Array<number>(barCount).fill(0);
@@ -36,6 +37,7 @@ export class CircularRenderer {
 
     this.pulsePhase += 0.05;
     this.rotationOffset += 0.005; // Faster rotation
+    this.kaleidoscopeRotation += 0.015; // Rotate the entire kaleidoscope
 
     const barAngle = (Math.PI * 2) / barCount;
     const dataStep = Math.floor(data.length / barCount);
@@ -47,14 +49,28 @@ export class CircularRenderer {
     offCtx.fillStyle = 'rgba(0, 0, 0, 0)';
     offCtx.fillRect(0, 0, offCanvas.width, offCanvas.height);
 
-    const segments = 12; // More segments for kaleidoscopic effect
+    const segments = 20; // Many more segments for strong kaleidoscopic effect
 
     for (let seg = 0; seg < segments; seg++) {
       offCtx.save();
       offCtx.translate(centerX, centerY);
-      offCtx.rotate((seg * Math.PI * 2) / segments);
-      offCtx.scale(seg % 2 === 0 ? 1 : -1, 1); 
+      offCtx.rotate((seg * Math.PI * 2) / segments + this.kaleidoscopeRotation); // Add rotation
+      // More complex mirroring pattern
+      const mirrorX = seg % 4 < 2 ? 1 : -1;
+      const mirrorY = seg % 2 === 0 ? 1 : -1;
+      offCtx.scale(mirrorX, mirrorY);
       offCtx.translate(-centerX, -centerY);
+      
+      // Clip to segment for cleaner edges
+      offCtx.beginPath();
+      offCtx.moveTo(centerX, centerY);
+      const angle1 = (seg * Math.PI * 2) / segments;
+      const angle2 = ((seg + 1) * Math.PI * 2) / segments;
+      const radius = Math.max(canvas.width, canvas.height);
+      offCtx.lineTo(centerX + Math.cos(angle1) * radius, centerY + Math.sin(angle1) * radius);
+      offCtx.lineTo(centerX + Math.cos(angle2) * radius, centerY + Math.sin(angle2) * radius);
+      offCtx.closePath();
+      offCtx.clip();
 
       for (let i = 0; i < 3; i++) {
         const glowRadius = radius * (0.9 - i * 0.15);

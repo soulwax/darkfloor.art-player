@@ -11,6 +11,7 @@ export class BarsRenderer {
   private time = 0;
   private chromaticShift = 0;
   private plasmaTime = 0;
+  private kaleidoscopeRotation = 0;
 
   constructor(barCount = 64) {
     this.peakHistory = new Array<number>(barCount).fill(0);
@@ -23,6 +24,7 @@ export class BarsRenderer {
     this.time += 0.02;
     this.plasmaTime += 0.05;
     this.chromaticShift = Math.sin(this.time * 0.5) * 5;
+    this.kaleidoscopeRotation += 0.01; // Rotate the entire kaleidoscope
 
     // Clear canvas with vibrant dark background
     ctx.fillStyle = 'rgba(5, 5, 15, 1)';
@@ -32,7 +34,7 @@ export class BarsRenderer {
     ctx.save();
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const segments = 8; // More segments for more kaleidoscopic effect
+    const segments = 16; // Many more segments for strong kaleidoscopic effect
 
     // Create off-screen canvas for kaleidoscopic rendering
     const offCanvas = document.createElement('canvas');
@@ -72,13 +74,27 @@ export class BarsRenderer {
     // Calculate global average for reactive effects
     const avgAmplitude = data.reduce((sum, val) => sum + val, 0) / data.length / 255;
 
-    // Render bars in kaleidoscopic segments
+    // Render bars in kaleidoscopic segments with rotation
     for (let seg = 0; seg < segments; seg++) {
       offCtx.save();
       offCtx.translate(centerX, centerY);
-      offCtx.rotate((seg * Math.PI * 2) / segments);
-      offCtx.scale(seg % 2 === 0 ? 1 : -1, 1); // Mirror alternate segments
+      offCtx.rotate((seg * Math.PI * 2) / segments + this.kaleidoscopeRotation); // Add rotation
+      // More complex mirroring pattern for stronger kaleidoscope effect
+      const mirrorX = seg % 4 < 2 ? 1 : -1;
+      const mirrorY = seg % 2 === 0 ? 1 : -1;
+      offCtx.scale(mirrorX, mirrorY);
       offCtx.translate(-centerX, -centerY);
+      
+      // Clip to segment for cleaner edges
+      offCtx.beginPath();
+      offCtx.moveTo(centerX, centerY);
+      const angle1 = (seg * Math.PI * 2) / segments;
+      const angle2 = ((seg + 1) * Math.PI * 2) / segments;
+      const radius = Math.max(canvas.width, canvas.height);
+      offCtx.lineTo(centerX + Math.cos(angle1) * radius, centerY + Math.sin(angle1) * radius);
+      offCtx.lineTo(centerX + Math.cos(angle2) * radius, centerY + Math.sin(angle2) * radius);
+      offCtx.closePath();
+      offCtx.clip();
 
     for (let i = 0; i < barCount; i++) {
       const dataIndex = i * dataStep;
@@ -207,12 +223,14 @@ export class BarsRenderer {
 
     offCtx.shadowBlur = 0;
 
-    // Apply kaleidoscopic mirroring to main canvas
+    // Apply kaleidoscopic mirroring to main canvas with rotation
     for (let seg = 0; seg < segments; seg++) {
       ctx.save();
       ctx.translate(centerX, centerY);
-      ctx.rotate((seg * Math.PI * 2) / segments);
-      ctx.scale(seg % 2 === 0 ? 1 : -1, 1); // Mirror alternate segments
+      ctx.rotate((seg * Math.PI * 2) / segments + this.kaleidoscopeRotation); // Add rotation
+      const mirrorX = seg % 4 < 2 ? 1 : -1;
+      const mirrorY = seg % 2 === 0 ? 1 : -1;
+      ctx.scale(mirrorX, mirrorY);
       ctx.translate(-centerX, -centerY);
       ctx.globalCompositeOperation = 'screen'; // Use screen blend for maximum vibrant effect
       ctx.globalAlpha = 1.0;
