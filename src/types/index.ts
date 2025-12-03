@@ -241,7 +241,7 @@ export interface PlaylistWithTracks {
   isPublic: boolean;
   coverImage: string | null;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
   trackCount?: number;
   tracks?: Array<{
     id: number;

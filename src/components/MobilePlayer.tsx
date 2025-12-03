@@ -104,7 +104,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
   const { data: preferences } = api.music.getUserPreferences.useQuery(undefined, {
     enabled: isAuthenticated,
   });
-  const updatePreferences = api.music.updatePreferences.useMutation();
 
   const [isExpanded, setIsExpanded] = useState(forceExpanded);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
@@ -223,19 +222,6 @@ export default function MobilePlayer(props: MobilePlayerProps) {
     }
   }, [isAuthenticated]);
 
-  // Persist visualizer preference changes (similar to PersistentPlayer)
-  // This callback is available for future use when a visualizer toggle is added to mobile UI
-  const _persistVisualizerPreference = useCallback(
-    (next: boolean) => {
-      setVisualizerEnabled(next);
-      if (isAuthenticated) {
-        updatePreferences.mutate({ visualizerEnabled: next });
-      } else if (typeof window !== "undefined") {
-        window.localStorage.setItem(STORAGE_KEYS.VISUALIZER_ENABLED, JSON.stringify(next));
-      }
-    },
-    [isAuthenticated, updatePreferences],
-  );
 
   // Audio-reactive background effects (respects visualizer preference)
   useAudioReactiveBackground(audioElement, isPlaying, visualizerEnabled);
