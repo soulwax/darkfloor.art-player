@@ -60,6 +60,7 @@
     "typecheck": "tsc --noEmit",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3222 && electron .\"",
     "electron:prod": "cross-env ELECTRON_BUILD=true next build && npm run electron:prepare && cross-env ELECTRON_PROD=true electron .",
+    "electron:prod:win": "npm run electron:build:win && .\\dist\\Starchild Music Setup 0.2.0.exe",
     "electron:prepare": "node electron/prepare-package.js",
     "electron:clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
     "electron:build": "npm run electron:clean && cross-env ELECTRON_BUILD=true next build && npm run electron:prepare && electron-builder",
