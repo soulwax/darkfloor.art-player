@@ -15,7 +15,8 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { useAudioReactiveBackground } from "@/hooks/useAudioReactiveBackground";
 import { LightweightParticleBackground } from "./LightweightParticleBackground";
-import { KaleidoscopeBackground } from "./KaleidoscopeBackground";
+import { FlowFieldBackground } from "./FlowFieldBackground";
+import { WelcomeHero } from "./WelcomeHero";
 import MaturePlayer from "./Player";
 
 const Equalizer = dynamic(
@@ -55,6 +56,8 @@ export default function PersistentPlayer() {
   const [showEqualizer, setShowEqualizer] = useState(false);
   const [visualizerEnabled, setVisualizerEnabled] = useState(true);
   const [visualizerEnsureToken, setVisualizerEnsureToken] = useState(0);
+  const [heroVisible, setHeroVisible] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // Sync state with database preferences when they load
   useEffect(() => {
@@ -236,9 +239,9 @@ export default function PersistentPlayer() {
         />
       )}
 
-      {/* Fullscreen Kaleidoscope Background */}
+      {/* Fullscreen Flow Field Background */}
       {player.audioElement && player.currentTrack && visualizerEnabled && (
-        <KaleidoscopeBackground
+        <FlowFieldBackground
           audioElement={player.audioElement}
           isPlaying={player.isPlaying}
         />

@@ -651,7 +651,7 @@ input, button { outline: none; }
   }
   * { transition: none !important; }
 
-  /* Disable kaleidoscope animations for accessibility */
+  /* Disable visualizer animations for accessibility */
   html::before,
   html::after,
   body::before,
