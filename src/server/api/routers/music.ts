@@ -1236,7 +1236,7 @@ export const musicRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const API_URL =
-        process.env.NEXT_PUBLIC_API_URL ?? "https://api.starchildmusic.com";
+        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3222";
 
       try {
         // Get user's similarity preference from database
@@ -1475,7 +1475,7 @@ export const musicRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const API_URL =
-        process.env.NEXT_PUBLIC_API_URL ?? "https://api.starchildmusic.com";
+        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3222";
 
       try {
         // Fetch seed tracks to get their names
