@@ -3,6 +3,8 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { existsSync, readFileSync } from "fs";
 import path from "path";
+import { Pool } from "pg";
+import { env } from "@/env";
 import * as schema from "./schema";
 
 // Determine certificate path based on environment
@@ -27,7 +29,7 @@ function getCertPath(): string {
 }
 
 const pool = new Pool({
-  connectionString,
+  connectionString: env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: true,
     ca: readFileSync(getCertPath()).toString(),

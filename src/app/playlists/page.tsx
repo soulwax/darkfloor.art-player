@@ -6,7 +6,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingSpinner";
 import { useToast } from "@/contexts/ToastContext";
 import { api } from "@/trpc/react";
-import type { Track } from "@/types";
 import { Music, Plus } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
