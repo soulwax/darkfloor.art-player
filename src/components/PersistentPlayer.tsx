@@ -10,12 +10,12 @@ import { useIsMobile } from "@/hooks/useMediaQuery";
 import { api } from "@/trpc/react";
 // import { extractColorsFromImage, type ColorPalette } from "@/utils/colorExtractor";
 // import { getCoverImage } from "@/utils/images";
+import { useAudioReactiveBackground } from "@/hooks/useAudioReactiveBackground";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
-import { useAudioReactiveBackground } from "@/hooks/useAudioReactiveBackground";
+import { FlowFieldBackground } from "./FlowFieldBackground";
 import { LightweightParticleBackground } from "./LightweightParticleBackground";
-import { KaleidoscopeBackground } from "./KaleidoscopeBackground";
 import MaturePlayer from "./Player";
 
 const Equalizer = dynamic(
@@ -54,6 +54,9 @@ export default function PersistentPlayer() {
   const [showQueue, setShowQueue] = useState(false);
   const [showEqualizer, setShowEqualizer] = useState(false);
   const [visualizerEnabled, setVisualizerEnabled] = useState(true);
+  const [visualizerEnsureToken, setVisualizerEnsureToken] = useState(0);
+  const [heroVisible, setHeroVisible] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // Sync state with database preferences when they load
   useEffect(() => {
@@ -235,9 +238,9 @@ export default function PersistentPlayer() {
         />
       )}
 
-      {/* Fullscreen Kaleidoscope Background */}
+      {/* Fullscreen Flow Field Background */}
       {player.audioElement && player.currentTrack && visualizerEnabled && (
-        <KaleidoscopeBackground
+        <FlowFieldBackground
           audioElement={player.audioElement}
           isPlaying={player.isPlaying}
         />
