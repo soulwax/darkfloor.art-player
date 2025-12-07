@@ -540,7 +540,9 @@ function SearchPageContent() {
   return searchContent;
 }
 
-export default function HomePage() {
+export default async function HomePage(props: {
+  searchParams: Promise<{ q?: string; album?: string }>;
+}) {
   return (
     <Suspense fallback={null}>
       <SearchPageContent />

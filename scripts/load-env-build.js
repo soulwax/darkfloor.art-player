@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 // Script to load .env.local and run a command with those environment variables
 
-const { execSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { execSync } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load dotenv
-require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Get the command from arguments
 const command = process.argv.slice(2).join(' ');
