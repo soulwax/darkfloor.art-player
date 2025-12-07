@@ -42,31 +42,40 @@ const hostname = process.env.NEXTAUTH_URL || `locahost:${port}`;
 // CENTRALIZED LOGGING WITH CHALK
 // ============================================
 const logger = {
+  /** @param {string} message */
   info: (message) => {
     const timestamp = chalk.gray(`[${new Date().toISOString()}]`);
     console.log(`${timestamp} ${chalk.cyan('ℹ')} ${message}`);
   },
 
+  /** @param {string} message */
   success: (message) => {
     const timestamp = chalk.gray(`[${new Date().toISOString()}]`);
     console.log(`${timestamp} ${chalk.green('✓')} ${message}`);
   },
 
+  /** @param {string} message */
   warn: (message) => {
     const timestamp = chalk.gray(`[${new Date().toISOString()}]`);
     console.log(`${timestamp} ${chalk.yellow('⚠')} ${message}`);
   },
 
+  /** @param {string} message */
   error: (message) => {
     const timestamp = chalk.gray(`[${new Date().toISOString()}]`);
     console.error(`${timestamp} ${chalk.red('✗')} ${message}`);
   },
 
+  /** @param {string} message */
   debug: (message) => {
     const timestamp = chalk.gray(`[${new Date().toISOString()}]`);
     console.log(`${timestamp} ${chalk.magenta('⚙')} ${chalk.dim(message)}`);
   },
 
+  /**
+   * @param {string} title
+   * @param {string} icon
+   */
   section: (title, icon = '🎵') => {
     const line = chalk.cyan.bold('═'.repeat(70));
     console.log(`\n${line}`);
