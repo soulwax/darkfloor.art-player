@@ -206,6 +206,7 @@ function startServer() {
   });
 
   // Handle graceful shutdown
+  /** @type {NodeJS.Signals[]} */
   const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
   signals.forEach((signal) => {
     process.on(signal, () => {
@@ -227,9 +228,12 @@ function startServer() {
       const networkAddresses = [];
 
       for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-          if (iface.family === 'IPv4' && !iface.internal) {
-            networkAddresses.push(iface.address);
+        const interfaceList = interfaces[name];
+        if (interfaceList) {
+          for (const iface of interfaceList) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+              networkAddresses.push(iface.address);
+            }
           }
         }
       }
@@ -276,7 +280,8 @@ if (isDev) {
 try {
   startServer();
 } catch (error) {
-  logger.error(`Failed to start server: ${error.message}`);
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  logger.error(`Failed to start server: ${errorMessage}`);
   console.error(error);
   process.exit(1);
 }
