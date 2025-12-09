@@ -4,7 +4,7 @@
 
 import { Settings } from "lucide-react";
 import { useEffect, useState } from "react";
-import { FlowFieldRenderer } from "./visualizers/FlowFieldRenderer";
+import type { FlowFieldRenderer } from "./visualizers/FlowFieldRenderer";
 
 interface PatternControlsProps {
   renderer: FlowFieldRenderer | null;
