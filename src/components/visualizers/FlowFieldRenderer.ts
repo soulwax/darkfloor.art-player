@@ -111,6 +111,7 @@ export class FlowFieldRenderer {
   private transitionProgress = 0;
   private transitionSpeed = 0.015;
   private isTransitioning = false;
+  private hasLoggedInitialPattern = false;
   private allPatterns: Pattern[] = [
     "rays",
     "galaxy",
@@ -236,6 +237,25 @@ export class FlowFieldRenderer {
     this.initializeParticles();
     this.initializeBubbles();
     this.initializeVoronoiSeeds();
+  }
+
+  private formatPatternName(pattern: Pattern): string {
+    // Convert camelCase to Title Case with spaces
+    return pattern
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+  }
+
+  private logPatternChange(pattern: Pattern, event: "playing" | "transitioning-to" | "transitioned-to"): void {
+    const formattedName = this.formatPatternName(pattern);
+    const emoji = event === "playing" ? "🎨" : event === "transitioning-to" ? "🔄" : "✨";
+    const message = event === "playing" 
+      ? `${emoji} Visual playing: ${formattedName}`
+      : event === "transitioning-to"
+      ? `${emoji} Transitioning to: ${formattedName}`
+      : `${emoji} Now playing: ${formattedName}`;
+    console.log(`[Visual] ${message}`);
   }
 
   private shufflePatterns(): void {
@@ -386,6 +406,12 @@ export class FlowFieldRenderer {
 
     this.patternTimer++;
 
+    // Log initial pattern on first render
+    if (!this.hasLoggedInitialPattern) {
+      this.logPatternChange(this.currentPattern, "playing");
+      this.hasLoggedInitialPattern = true;
+    }
+
     if (this.isTransitioning) {
       const rawProgress =
         this.transitionProgress +
@@ -395,8 +421,14 @@ export class FlowFieldRenderer {
       if (this.transitionProgress >= 1) {
         this.transitionProgress = 0;
         this.isTransitioning = false;
+        const previousPattern = this.currentPattern;
         this.currentPattern = this.nextPattern;
         this.patternTimer = 0;
+        
+        // Log when transition completes
+        if (previousPattern !== this.currentPattern) {
+          this.logPatternChange(this.currentPattern, "transitioned-to");
+        }
       }
     } else if (this.patternTimer > dynamicDuration) {
       this.isTransitioning = true;
@@ -409,6 +441,9 @@ export class FlowFieldRenderer {
       }
 
       this.nextPattern = this.patternSequence[this.patternIndex] ?? "rays";
+      
+      // Log when transition starts
+      this.logPatternChange(this.nextPattern, "transitioning-to");
     }
   }
 

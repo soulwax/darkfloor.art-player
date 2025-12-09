@@ -29,6 +29,10 @@ module.exports = {
       // ============================================
       // PRODUCTION CONFIGURATION
       // ============================================
+      name: "starchild-music-frontend-prod",
+      script: "scripts/server.js",
+      args: "",
+      interpreter: "node",
       instances: 1, // Single instance (Next.js is already optimized, doesn't work well with PM2 cluster mode)
       exec_mode: "fork", // Fork mode (Next.js binds to port directly, incompatible with PM2 cluster mode)
 
