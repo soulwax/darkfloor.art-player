@@ -1,7 +1,7 @@
 // File: src/app/page.tsx
-
 "use client";
 
+import { Suspense } from "react";
 import MobileSearchBar from "@/components/MobileSearchBar";
 import { PullToRefreshWrapper } from "@/components/PullToRefreshWrapper";
 import SwipeableTrackCard from "@/components/SwipeableTrackCard";
@@ -24,7 +24,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Music2, Search, Sparkles } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 function SearchPageContent() {
   const { data: session } = useSession();

@@ -1,6 +1,6 @@
 {
   "name": "starchild-music-frontend",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "email": "cirrus.okimasu@gmail.com",
@@ -36,9 +36,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "dev": "next dev --turbo --port 3222",
+    "dev": "node scripts/server.js",
+    "dev:next": "next dev --turbo --port 3412",
     "pm2:start": "npm run build && pm2 start ecosystem.config.cjs --env production",
-    "pm2:dev": "pm2 start ecosystem.config.cjs --only starchild-music-frontend-dev",
+    "pm2:dev": "pm2 start ecosystem.config.cjs --only starchild-music-frontend-dev --env development",
     "pm2:reload": "pm2 reload ecosystem.config.cjs --env production",
     "pm2:restart": "pm2 restart ecosystem.config.cjs --update-env",
     "pm2:stop": "pm2 stop ecosystem.config.cjs",
@@ -56,9 +57,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "preview": "next build && next start",
-    "start": "next start --port 3222",
+    "start": "NODE_ENV=production node scripts/server.js",
+    "start:next": "next start --port 3412",
     "typecheck": "tsc --noEmit",
-    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3222 && electron .\"",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3412 && electron .\"",
     "electron:prod": "node scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true ELECTRON_PROD=true next build && npm run electron:prepare && electron .\"",
     "electron:prod:win": "npm run electron:build:win && .\\dist\\Starchild Music Setup 0.3.0.exe",
     "electron:prepare": "node scripts/load-env-build.js \"node electron/prepare-package.js\"",
@@ -79,9 +81,11 @@
     "@trpc/client": "^11.0.0",
     "@trpc/react-query": "^11.7.0",
     "@trpc/server": "^11.0.0",
+    "chalk": "^5.6.2",
     "drizzle-orm": "^0.41.0",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.548.0",
+    "morgan": "^1.10.1",
     "next": "^15.5.6",
     "next-auth": "^5.0.0-beta.30",
     "pg": "^8.16.3",
@@ -100,7 +104,12 @@
     "@next/bundle-analyzer": "^16.0.1",
     "@svgr/cli": "^8.1.0",
     "@tailwindcss/postcss": "^4.1.16",
+<<<<<<< HEAD
     "@types/node": "^20.19.25",
+=======
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^20.19.23",
+>>>>>>> 80845a12678c9a81bcc15e04f2e9f22270764176
     "@types/pg": "^8.15.5",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -178,5 +187,11 @@
   },
   "ct3aMetadata": {
     "initVersion": "7.39.3"
+<<<<<<< HEAD
   }
 }
+=======
+  },
+  "packageManager": "npm@11.6.2"
+}
+>>>>>>> 80845a12678c9a81bcc15e04f2e9f22270764176

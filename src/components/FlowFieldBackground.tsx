@@ -114,8 +114,9 @@ export function FlowFieldBackground({
         height: "100vh",
         zIndex: -1,
         pointerEvents: "none",
-        opacity: 0.3,
-        filter: "blur(20px)",
+        opacity: 0.6,
+        filter: "blur(8px) contrast(1.4) saturate(1.6)",
+        mixBlendMode: "screen",
       }}
     />
   );

@@ -41,6 +41,7 @@ logs/pm2/*.log
 .env
 .env.production
 .env*.local
+.env.development
 
 # vercel
 .vercel
