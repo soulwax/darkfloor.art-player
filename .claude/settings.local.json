@@ -16,11 +16,6 @@
       "Bash(node electron/prepare-package.js:*)",
       "Bash(grep:*)",
       "Bash(npm run format:write:*)",
-<<<<<<< HEAD
-      "Bash(node --version:*)",
-      "Bash(npm --version:*)",
-      "Bash(pnpm add:*)"
-=======
       "Bash(npx tsc:*)",
       "Bash(npm install:*)",
       "Bash(pm2 status:*)",
@@ -32,7 +27,6 @@
       "Bash(xargs:*)",
       "Bash(git restore:*)",
       "Bash(1)"
->>>>>>> 80845a12678c9a81bcc15e04f2e9f22270764176
     ],
     "deny": [],
     "ask": []
