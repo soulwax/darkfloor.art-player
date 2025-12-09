@@ -5,6 +5,31 @@ All notable changes to Starchild Music will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-12-09
+
+### Added
+
+#### Visualizer Pattern Controls
+
+- **Interactive Pattern Controls Panel**: New real-time control interface for visualizer patterns
+  - Pattern duration adjustment (50-1000 frames)
+  - Transition speed control (0.001-0.1)
+  - Hue base adjustment (0-360°)
+  - Real-time pattern state display showing current and next patterns
+  - Transition progress indicator
+  - Fractal pattern controls:
+    - Zoom adjustment (0.1-10)
+    - Offset X/Y controls (-2 to 2)
+    - Julia C complex parameter controls (real and imaginary components)
+  - Accessible via Layers button in player controls when visualizer is enabled
+  - Mobile-responsive design with backdrop blur and arcane-themed styling
+
+### Changed
+
+- **Player Controls**: Added pattern controls toggle button to player interface
+  - Button appears when visualizer is enabled
+  - Integrated with existing player control layout
+
 ## [0.5.3] - 2025-12-09
 
 ### Changed

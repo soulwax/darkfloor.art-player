@@ -110,7 +110,7 @@ export class FlowFieldRenderer {
   private currentPattern: Pattern = "rays";
   private nextPattern: Pattern = "fractal";
   private patternTimer = 0;
-  private patternDuration = 100; // Halved from 600 to 300
+  private patternDuration = 10;
   private transitionProgress = 0;
   private transitionSpeed = 0.015;
   private isTransitioning = false;
@@ -249,14 +249,19 @@ export class FlowFieldRenderer {
       .trim();
   }
 
-  private logPatternChange(pattern: Pattern, event: "playing" | "transitioning-to" | "transitioned-to"): void {
+  private logPatternChange(
+    pattern: Pattern,
+    event: "playing" | "transitioning-to" | "transitioned-to",
+  ): void {
     const formattedName = this.formatPatternName(pattern);
-    const emoji = event === "playing" ? "🎨" : event === "transitioning-to" ? "🔄" : "✨";
-    const message = event === "playing" 
-      ? `${emoji} Visual playing: ${formattedName}`
-      : event === "transitioning-to"
-      ? `${emoji} Transitioning to: ${formattedName}`
-      : `${emoji} Now playing: ${formattedName}`;
+    const emoji =
+      event === "playing" ? "🎨" : event === "transitioning-to" ? "🔄" : "✨";
+    const message =
+      event === "playing"
+        ? `${emoji} Visual playing: ${formattedName}`
+        : event === "transitioning-to"
+          ? `${emoji} Transitioning to: ${formattedName}`
+          : `${emoji} Now playing: ${formattedName}`;
     console.log(`[Visual] ${message}`);
   }
 
@@ -313,9 +318,10 @@ export class FlowFieldRenderer {
   private createBubble(): Bubble {
     // Mystical color palette: deep purples, dark blues, crimson reds
     const mysticalHues = [270, 280, 290, 240, 250, 0, 330, 340];
-    const baseHue = mysticalHues[Math.floor(Math.random() * mysticalHues.length)] ?? 270;
+    const baseHue =
+      mysticalHues[Math.floor(Math.random() * mysticalHues.length)] ?? 270;
     const hue = baseHue + (Math.random() - 0.5) * 20;
-    
+
     return {
       x: Math.random() * this.width,
       y: this.height + Math.random() * 100,
@@ -433,7 +439,7 @@ export class FlowFieldRenderer {
         const previousPattern = this.currentPattern;
         this.currentPattern = this.nextPattern;
         this.patternTimer = 0;
-        
+
         // Log when transition completes
         if (previousPattern !== this.currentPattern) {
           this.logPatternChange(this.currentPattern, "transitioned-to");
@@ -450,7 +456,7 @@ export class FlowFieldRenderer {
       }
 
       this.nextPattern = this.patternSequence[this.patternIndex] ?? "rays";
-      
+
       // Log when transition starts
       this.logPatternChange(this.nextPattern, "transitioning-to");
     }
@@ -849,7 +855,7 @@ export class FlowFieldRenderer {
       } else {
         bubble.age++;
         bubble.rotation += 0.01 + audioIntensity * 0.005;
-        
+
         // Gentle floating motion
         bubble.vy -= 0.008;
         bubble.vx += (Math.random() - 0.5) * 0.05;
@@ -1467,7 +1473,6 @@ export class FlowFieldRenderer {
     ctx.restore();
   }
 
-
   private renderGalaxy(
     audioIntensity: number,
     bassIntensity: number,
@@ -1698,76 +1703,122 @@ export class FlowFieldRenderer {
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
 
+    // Pre-calculate base values to reduce per-layer calculations
+    const audioFade = Math.max(0.2, audioIntensity);
+    const shimmersPerLayer = Math.max(3, Math.floor(audioIntensity * 8));
+    const waveStep = 8; // Increased from 5 for better performance
+
     for (let layer = 0; layer < layers; layer++) {
       const phase = this.time * 0.002 + layer * 0.5;
       const yBase = this.height * 0.3 + layer * 30;
       const amplitude = 50 + bassIntensity * 80;
       const hue = (this.hueBase + layer * 60 + midIntensity * 120) % 360;
 
+      // Draw main wave fill with optimized gradient
       ctx.beginPath();
       ctx.moveTo(0, this.height);
 
-      for (let x = 0; x <= this.width; x += 5) {
+      // Optimized wave calculation with larger steps
+      for (let x = 0; x <= this.width; x += waveStep) {
         const wave1 = Math.sin(x * 0.005 + phase) * amplitude;
         const wave2 = Math.sin(x * 0.003 - phase * 1.5) * amplitude * 0.5;
         const y = yBase + wave1 + wave2;
-
         ctx.lineTo(x, y);
+      }
+
+      // Ensure we reach the right edge
+      if (this.width % waveStep !== 0) {
+        const finalWave1 = Math.sin(this.width * 0.005 + phase) * amplitude;
+        const finalWave2 =
+          Math.sin(this.width * 0.003 - phase * 1.5) * amplitude * 0.5;
+        ctx.lineTo(this.width, yBase + finalWave1 + finalWave2);
       }
 
       ctx.lineTo(this.width, this.height);
       ctx.closePath();
 
+      // Enhanced gradient with more color stops for smoother transitions
       const gradient = ctx.createLinearGradient(
         0,
         yBase - amplitude,
         0,
         this.height,
       );
+
+      // Main color
+      const mainAlpha = 0.4 + audioIntensity * 0.3;
+      gradient.addColorStop(0, `hsla(${hue}, 90%, 70%, ${mainAlpha})`);
+
+      // Secondary colors with better distribution
+      gradient.addColorStop(0.2, `hsla(${hue}, 85%, 65%, ${mainAlpha * 0.8})`);
       gradient.addColorStop(
-        0,
-        `hsla(${hue}, 90%, 70%, ${0.3 + audioIntensity * 0.3})`,
+        0.4,
+        `hsla(${(hue + 20) % 360}, 80%, 60%, ${mainAlpha * 0.6})`,
       );
       gradient.addColorStop(
-        0.3,
-        `hsla(${hue}, 85%, 65%, ${0.2 + audioIntensity * 0.2})`,
+        0.6,
+        `hsla(${(hue + 40) % 360}, 75%, 55%, ${mainAlpha * 0.4})`,
       );
       gradient.addColorStop(
-        0.7,
-        `hsla(${(hue + 30) % 360}, 80%, 60%, ${0.1 + audioIntensity * 0.1})`,
+        0.8,
+        `hsla(${(hue + 60) % 360}, 70%, 50%, ${mainAlpha * 0.15})`,
       );
       gradient.addColorStop(1, `hsla(${(hue + 60) % 360}, 70%, 50%, 0)`);
 
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      for (let x = 0; x < this.width; x += 20) {
-        const wave = Math.sin(x * 0.01 + phase * 2) * amplitude;
-        const y = yBase + wave;
-        const size = 3 + Math.random() * 5 + audioIntensity * 5;
-
-        const shimmerGradient = ctx.createRadialGradient(x, y, 0, x, y, size);
-        shimmerGradient.addColorStop(
-          0,
-          `hsla(${hue}, 100%, 90%, ${0.6 + Math.random() * 0.4})`,
+      // Optimized shimmer particles - fewer but better placed
+      if (audioIntensity > 0.1) {
+        const shimmerSpacing = Math.max(
+          40,
+          Math.floor(this.width / shimmersPerLayer),
         );
-        shimmerGradient.addColorStop(1, `hsla(${hue}, 90%, 80%, 0)`);
 
-        ctx.fillStyle = shimmerGradient;
-        ctx.fillRect(x - size, y - size, size * 2, size * 2);
+        for (let x = 0; x < this.width; x += shimmerSpacing) {
+          const shimmerRng = Math.sin(x * 0.02 + phase * 3) * 0.5 + 0.5; // 0-1
+          const wave = Math.sin(x * 0.01 + phase * 2) * amplitude;
+          const y = yBase + wave;
+          const size = 2 + shimmerRng * 4 + audioIntensity * 3;
 
-        if (x % 120 === 0) {
-          const clanIndex = Math.floor(x / 120 + layer * 3) % 13;
-          const symbolAlpha = 0.1 + audioIntensity * 0.15;
-          this.drawClanSymbol(
-            ctx,
-            x,
-            y,
-            20 + bassIntensity * 12,
-            clanIndex,
-            symbolAlpha,
-            hue,
+          const shimmerGradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+          const shimmerAlpha = 0.5 + shimmerRng * 0.4;
+          shimmerGradient.addColorStop(
+            0,
+            `hsla(${hue}, 100%, 90%, ${shimmerAlpha})`,
           );
+          shimmerGradient.addColorStop(
+            0.7,
+            `hsla(${hue}, 90%, 80%, ${shimmerAlpha * 0.5})`,
+          );
+          shimmerGradient.addColorStop(1, `hsla(${hue}, 90%, 80%, 0)`);
+
+          ctx.fillStyle = shimmerGradient;
+          ctx.fillRect(x - size, y - size, size * 2, size * 2);
+        }
+
+        // Draw clan symbols only when audio is prominent
+        if (audioIntensity > 0.3) {
+          const symbolSpacing = Math.floor(
+            this.width / Math.max(2, Math.floor(audioIntensity * 4)),
+          );
+
+          for (let x = 0; x < this.width; x += symbolSpacing) {
+            const wave = Math.sin(x * 0.01 + phase * 2) * amplitude;
+            const y = yBase + wave;
+            const clanIndex = Math.floor(x / symbolSpacing + layer * 3) % 13;
+            const symbolAlpha = 0.05 + audioIntensity * 0.12;
+
+            this.drawClanSymbol(
+              ctx,
+              x,
+              y,
+              15 + bassIntensity * 8,
+              clanIndex,
+              symbolAlpha,
+              hue,
+            );
+          }
         }
       }
     }
@@ -2353,17 +2404,15 @@ export class FlowFieldRenderer {
 
     if (this.isTransitioning) {
       const t = this.transitionProgress;
-      
+
       // Use gentler easing for Voronoi transitions (smooth ease-in-out)
-      const isVoronoiTransition = 
+      const isVoronoiTransition =
         this.currentPattern === "voronoi" || this.nextPattern === "voronoi";
-      
+
       let eased: number;
       if (isVoronoiTransition) {
         // Smooth ease-in-out for Voronoi: gentler transition
-        eased = t < 0.5 
-          ? 2 * t * t 
-          : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         // Apply additional smoothing for even gentler blend
         eased = eased * eased * (3 - 2 * eased); // Smoothstep function
       } else {

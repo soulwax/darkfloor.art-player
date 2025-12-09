@@ -3,6 +3,7 @@
 import "@/styles/globals.css";
 
 import { Geist } from "next/font/google";
+import { type Metadata } from "next";
 import { type ReactNode } from "react";
 
 import { ElectronStorageInit } from "@/components/ElectronStorageInit";
@@ -24,7 +25,7 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Starchild Music Stream",
   description:
     "Modern music streaming and discovery platform with smart recommendations",
@@ -39,7 +40,7 @@ export const metadata = {
     siteName: "Starchild Music",
     images: [
       {
-        url: "https://starchildmusic.com/og-image.png",
+        url: "https://starchildmusic.com/emily-the-strange.png",
         width: 1200,
         height: 630,
         alt: "Starchild Music - Modern music streaming platform",
