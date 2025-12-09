@@ -228,8 +228,8 @@ export class FlowFieldRenderer {
     this.ctx = ctx;
     this.width = canvas.width;
     this.height = canvas.height;
-    this.centerX = this.width / 2;
-    this.centerY = this.height / 2;
+    this.centerX = this.width * 0.5; // / 2 optimized
+    this.centerY = this.height * 0.5; // / 2 optimized
 
     this.shufflePatterns();
     this.initializeParticles();
@@ -264,7 +264,7 @@ export class FlowFieldRenderer {
     // Fisher-Yates shuffle algorithm
     this.patternSequence = [...this.allPatterns];
     for (let i = this.patternSequence.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = ((Math.random() * (i + 1)) | 0);
       [this.patternSequence[i], this.patternSequence[j]] = [
         this.patternSequence[j]!,
         this.patternSequence[i]!,
@@ -273,7 +273,7 @@ export class FlowFieldRenderer {
   }
 
   private initializeParticles(): void {
-    const count = Math.min(1200, Math.floor((this.width * this.height) / 800));
+    const count = Math.min(1200, ((this.width * this.height) * 0.00125) | 0); // / 800 optimized
     this.particles = [];
 
     for (let i = 0; i < count; i++) {
@@ -303,7 +303,7 @@ export class FlowFieldRenderer {
 
   private initializeBubbles(): void {
     this.bubbles = [];
-    const count = 30 + Math.floor(Math.random() * 20);
+    const count = 30 + ((Math.random() * 20) | 0);
 
     for (let i = 0; i < count; i++) {
       this.bubbles.push(this.createBubble());
@@ -328,7 +328,7 @@ export class FlowFieldRenderer {
       maxAge: 400 + Math.random() * 400,
       popping: false,
       popProgress: 0,
-      symbolType: Math.floor(Math.random() * 8), // 8 different occult symbols
+      symbolType: ((Math.random() * 8) | 0), // 8 different occult symbols
       rotation: Math.random() * Math.PI * 2,
     };
   }
@@ -348,7 +348,7 @@ export class FlowFieldRenderer {
   private initializeMatrixColumns(): void {
     const chars = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ01";
     this.matrixColumns = [];
-    const columnCount = Math.floor(this.width / 20);
+    const columnCount = ((this.width * 0.05) | 0); // / 20 optimized
 
     for (let i = 0; i < columnCount; i++) {
       this.matrixColumns.push({
@@ -364,7 +364,7 @@ export class FlowFieldRenderer {
 
   private initializeConstellationStars(): void {
     this.constellationStars = [];
-    const starCount = 20 + Math.floor(Math.random() * 15);
+    const starCount = 20 + ((Math.random() * 15) | 0);
 
     for (let i = 0; i < starCount; i++) {
       this.constellationStars.push({
@@ -461,7 +461,7 @@ export class FlowFieldRenderer {
     this.fractalZoom +=
       (0.02 + audioIntensity * 0.05) * (1 + Math.sin(this.time * 0.002) * 0.5);
 
-    const maxIter = 30 + Math.floor(audioIntensity * 30);
+    const maxIter = 30 + ((audioIntensity * 30) | 0);
     const zoom = Math.pow(1.5, this.fractalZoom);
 
     for (let py = 0; py < this.height; py += 3) {
@@ -477,9 +477,12 @@ export class FlowFieldRenderer {
         let y = y0;
         let iter = 0;
 
-        while (x * x + y * y <= 4 && iter < maxIter) {
-          const xtemp = x * x - y * y + this.juliaC.re;
-          y = 2 * x * y + this.juliaC.im;
+        while (iter < maxIter) {
+          const xSq = x * x;
+          const ySq = y * y;
+          if (xSq + ySq > 4) break; // Early exit optimization
+          const xtemp = xSq - ySq + this.juliaC.re;
+          y = (x + x) * y + this.juliaC.im; // 2 * x optimized
           x = xtemp;
           iter++;
         }
@@ -493,7 +496,7 @@ export class FlowFieldRenderer {
 
         for (let dy = 0; dy < 3 && py + dy < this.height; dy++) {
           for (let dx = 0; dx < 3 && px + dx < this.width; dx++) {
-            const i = ((py + dy) * this.width + (px + dx)) * 4;
+            const i = ((py + dy) * this.width + (px + dx)) << 2; // * 4 optimized
             data[i] = rgb[0] ?? 0;
             data[i + 1] = rgb[1] ?? 0;
             data[i + 2] = rgb[2] ?? 0;
@@ -512,7 +515,7 @@ export class FlowFieldRenderer {
     trebleIntensity: number,
   ): void {
     const ctx = this.ctx;
-    const rayCount = 24 + Math.floor(bassIntensity * 24);
+    const rayCount = 24 + ((bassIntensity * 24) | 0);
     const angleStep = (Math.PI * 2) / rayCount;
 
     ctx.save();
@@ -660,7 +663,7 @@ export class FlowFieldRenderer {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    switch (symbolType % 8) {
+    switch (symbolType & 7) { // % 8 optimized with bitwise AND
       case 0: // Pentagram
         ctx.beginPath();
         for (let i = 0; i < 5; i++) {
@@ -1063,6 +1066,8 @@ export class FlowFieldRenderer {
       let neighbors = 0;
 
       const perceptionRadius = 50 + audioIntensity * 50;
+      const perceptionRadiusSq = perceptionRadius * perceptionRadius; // Cache squared
+      const separationDistSq = 30 * 30; // 30^2 = 900
 
       for (let j = 0; j < this.particles.length; j++) {
         if (i === j) continue;
@@ -1071,18 +1076,20 @@ export class FlowFieldRenderer {
 
         const dx = other.x - particle.x;
         const dy = other.y - particle.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const distSq = dx * dx + dy * dy; // Use squared distance
 
-        if (dist < perceptionRadius && dist > 0) {
+        if (distSq < perceptionRadiusSq && distSq > 0) {
           alignX += other.vx;
           alignY += other.vy;
 
           cohereX += other.x;
           cohereY += other.y;
 
-          if (dist < 30) {
-            separateX -= dx / dist;
-            separateY -= dy / dist;
+          if (distSq < separationDistSq) {
+            const dist = Math.sqrt(distSq); // Only calculate sqrt when needed
+            const invDist = 1 / dist; // Cache inverse
+            separateX -= dx * invDist;
+            separateY -= dy * invDist;
           }
 
           neighbors++;
@@ -1100,21 +1107,24 @@ export class FlowFieldRenderer {
 
       const dx = this.centerX - particle.x;
       const dy = this.centerY - particle.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const distSq = dx * dx + dy * dy;
+      const dist = Math.sqrt(distSq);
+      const invDist = 1 / dist; // Cache inverse
       const centerForce = 0.001 * (1 + bassIntensity * 2);
 
       particle.vx +=
-        alignX * 0.02 + cohereX + separateX + (dx / dist) * centerForce;
+        alignX * 0.02 + cohereX + separateX + (dx * invDist) * centerForce;
       particle.vy +=
-        alignY * 0.02 + cohereY + separateY + (dy / dist) * centerForce;
+        alignY * 0.02 + cohereY + separateY + (dy * invDist) * centerForce;
 
       const maxSpeed = 2 + trebleIntensity * 3;
-      const speed = Math.sqrt(
-        particle.vx * particle.vx + particle.vy * particle.vy,
-      );
-      if (speed > maxSpeed) {
-        particle.vx = (particle.vx / speed) * maxSpeed;
-        particle.vy = (particle.vy / speed) * maxSpeed;
+      const maxSpeedSq = maxSpeed * maxSpeed; // Cache squared value
+      const speedSq = particle.vx * particle.vx + particle.vy * particle.vy;
+      if (speedSq > maxSpeedSq) {
+        const speed = Math.sqrt(speedSq); // Only calculate sqrt when needed
+        const invSpeed = maxSpeed / speed; // Cache inverse
+        particle.vx *= invSpeed;
+        particle.vy *= invSpeed;
       }
 
       particle.x += particle.vx;
@@ -1420,7 +1430,7 @@ export class FlowFieldRenderer {
         }
 
         if (r % 80 === 0) {
-          const clanIndex = Math.floor(r / 80) % 13;
+          const clanIndex = ((r * 0.0125) | 0) % 13; // / 80 optimized
           const symbolAlpha = 0.12 + audioIntensity * 0.18;
           this.drawClanSymbol(
             ctx,
@@ -1585,8 +1595,7 @@ export class FlowFieldRenderer {
     ctx.globalCompositeOperation = "lighter";
 
     // Pre-calculate base values to reduce per-layer calculations
-    const audioFade = Math.max(0.2, audioIntensity);
-    const shimmersPerLayer = Math.max(3, Math.floor(audioIntensity * 8));
+    const shimmersPerLayer = Math.max(3, ((audioIntensity * 8) | 0));
     const waveStep = 8; // Increased from 5 for better performance
 
     for (let layer = 0; layer < layers; layer++) {
@@ -1653,7 +1662,7 @@ export class FlowFieldRenderer {
       if (audioIntensity > 0.1) {
         const shimmerSpacing = Math.max(
           40,
-          Math.floor(this.width / shimmersPerLayer),
+          ((this.width / shimmersPerLayer) | 0),
         );
 
         for (let x = 0; x < this.width; x += shimmerSpacing) {
@@ -1680,14 +1689,12 @@ export class FlowFieldRenderer {
 
         // Draw clan symbols only when audio is prominent
         if (audioIntensity > 0.3) {
-          const symbolSpacing = Math.floor(
-            this.width / Math.max(2, Math.floor(audioIntensity * 4)),
-          );
+          const symbolSpacing = ((this.width / Math.max(2, ((audioIntensity * 4) | 0))) | 0);
 
           for (let x = 0; x < this.width; x += symbolSpacing) {
             const wave = Math.sin(x * 0.01 + phase * 2) * amplitude;
             const y = yBase + wave;
-            const clanIndex = Math.floor(x / symbolSpacing + layer * 3) % 13;
+            const clanIndex = (((x / symbolSpacing + layer * 3) | 0) % 13);
             const symbolAlpha = 0.05 + audioIntensity * 0.12;
 
             this.drawClanSymbol(
@@ -1718,7 +1725,7 @@ export class FlowFieldRenderer {
       const hue = Math.random() * 360;
       const x = this.width * (0.3 + Math.random() * 0.4);
       const y = this.height * (0.3 + Math.random() * 0.3);
-      const particleCount = 50 + Math.floor(bassIntensity * 100);
+      const particleCount = 50 + ((bassIntensity * 100) | 0);
 
       for (let i = 0; i < particleCount; i++) {
         const angle = (i / particleCount) * Math.PI * 2;
@@ -2249,9 +2256,13 @@ export class FlowFieldRenderer {
   render(dataArray: Uint8Array, bufferLength: number): void {
     const ctx = this.ctx;
 
-    const avgFrequency =
-      dataArray.reduce((sum, val) => sum + val, 0) / bufferLength;
-    const audioIntensity = Math.min(1, avgFrequency / 128);
+    // Optimized sum calculation (faster than reduce)
+    let sum = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      sum += dataArray[i] ?? 0;
+    }
+    const avgFrequency = sum / bufferLength;
+    const audioIntensity = Math.min(1, avgFrequency * 0.0078125); // 1/128 optimized
     const bassIntensity = this.getFrequencyBandIntensity(
       dataArray,
       bufferLength,
@@ -2763,13 +2774,15 @@ export class FlowFieldRenderer {
     startRatio: number,
     endRatio: number,
   ): number {
-    const startIndex = Math.floor(bufferLength * startRatio);
-    const endIndex = Math.floor(bufferLength * endRatio);
+    const startIndex = (bufferLength * startRatio) | 0; // Math.floor optimized
+    const endIndex = (bufferLength * endRatio) | 0; // Math.floor optimized
+    const range = endIndex - startIndex;
+    if (range <= 0) return 0;
     let sum = 0;
     for (let i = startIndex; i < endIndex; i++) {
       sum += dataArray[i] ?? 0;
     }
-    return Math.min(1, sum / (endIndex - startIndex) / 128);
+    return Math.min(1, sum * 0.0078125 / range); // 1/128 optimized
   }
 
   private hslToRgb(h: number, s: number, l: number): [number, number, number] {
@@ -2781,27 +2794,35 @@ export class FlowFieldRenderer {
       const hue2rgb = (p: number, q: number, t: number) => {
         if (t < 0) t += 1;
         if (t > 1) t -= 1;
-        if (t < 1 / 6) return p + (q - p) * 6 * t;
-        if (t < 1 / 2) return q;
-        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        if (t < 0.16666666666666666) return p + (q - p) * 6 * t; // 1/6
+        if (t < 0.5) return q;
+        if (t < 0.6666666666666666) return p + (q - p) * (0.6666666666666666 - t) * 6; // 2/3
         return p;
       };
 
       const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1 / 3);
+      const p = (l + l) - q; // 2 * l optimized
+      r = hue2rgb(p, q, h + 0.3333333333333333); // 1/3
       g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1 / 3);
+      b = hue2rgb(p, q, h - 0.3333333333333333); // 1/3
     }
 
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    // Use bitwise operations for faster rounding and clamping
+    const r255 = (r * 255 + 0.5) | 0;
+    const g255 = (g * 255 + 0.5) | 0;
+    const b255 = (b * 255 + 0.5) | 0;
+    return [
+      r255 < 0 ? 0 : r255 > 255 ? 255 : r255,
+      g255 < 0 ? 0 : g255 > 255 ? 255 : g255,
+      b255 < 0 ? 0 : b255 > 255 ? 255 : b255,
+    ];
   }
 
   resize(width: number, height: number): void {
     this.width = width;
     this.height = height;
-    this.centerX = width / 2;
-    this.centerY = height / 2;
+    this.centerX = width * 0.5; // / 2 optimized
+    this.centerY = height * 0.5; // / 2 optimized
     this.canvas.width = width;
     this.canvas.height = height;
 
@@ -6761,7 +6782,7 @@ export class FlowFieldRenderer {
       let textLine = "";
       for (let i = 0; i < 15; i++) {
         textLine +=
-          symbols[Math.floor((this.time * 0.001 + line + i) % symbols.length)];
+          symbols[(((this.time * 0.001 + line + i) % symbols.length) | 0)];
       }
 
       ctx.fillText(textLine, 0, y);
