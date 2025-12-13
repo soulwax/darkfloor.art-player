@@ -5,6 +5,7 @@ import "./src/env.js";
 // Handle unhandled rejections during build (e.g., _document/_error pages not found in App Router)
 if (typeof process !== "undefined") {
   const originalEmit = process.emit;
+  // @ts-ignore - Overriding process.emit with custom handler for error suppression
   process.emit = function (event, ...args) {
     // Suppress unhandledRejection events for expected missing pages in App Router
     if (event === "unhandledRejection") {
@@ -13,16 +14,22 @@ if (typeof process !== "undefined") {
         reason &&
         typeof reason === "object" &&
         "code" in reason &&
-        reason.code === "ENOENT" &&
-        ("message" in reason || "type" in reason) &&
-        (String(reason.message || reason.type || "").includes("_document") ||
-          String(reason.message || reason.type || "").includes("_error") ||
-          String(reason.message || reason.type || "").includes("PageNotFoundError"))
+        reason.code === "ENOENT"
       ) {
-        // These are expected in App Router - suppress the error
-        return false; // Prevent default handling
+        const message = "message" in reason ? String(reason.message) : "";
+        const type = "type" in reason ? String(reason.type) : "";
+        const errorText = message || type || "";
+        if (
+          errorText.includes("_document") ||
+          errorText.includes("_error") ||
+          errorText.includes("PageNotFoundError")
+        ) {
+          // These are expected in App Router - suppress the error
+          return false; // Prevent default handling
+        }
       }
     }
+    // @ts-ignore - TypeScript can't infer the correct overload signature
     return originalEmit.apply(process, [event, ...args]);
   };
 
@@ -32,14 +39,19 @@ if (typeof process !== "undefined") {
       reason &&
       typeof reason === "object" &&
       "code" in reason &&
-      reason.code === "ENOENT" &&
-      ("message" in reason || "type" in reason) &&
-      (String(reason.message || reason.type || "").includes("_document") ||
-        String(reason.message || reason.type || "").includes("_error") ||
-        String(reason.message || reason.type || "").includes("PageNotFoundError"))
+      reason.code === "ENOENT"
     ) {
-      // These are expected in App Router - _document, _error, and other _ prefixed pages are not needed
-      return;
+      const message = "message" in reason ? String(reason.message) : "";
+      const type = "type" in reason ? String(reason.type) : "";
+      const errorText = message || type || "";
+      if (
+        errorText.includes("_document") ||
+        errorText.includes("_error") ||
+        errorText.includes("PageNotFoundError")
+      ) {
+        // These are expected in App Router - _document, _error, and other _ prefixed pages are not needed
+        return;
+      }
     }
     // Log other unhandled rejections for debugging
     console.error("Unhandled Rejection at:", promise, "reason:", reason);
