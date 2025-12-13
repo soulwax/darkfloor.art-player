@@ -194,13 +194,13 @@ export default function SwipeableTrackCard({
   return (
     <motion.div
       ref={constraintsRef}
-      className="relative overflow-hidden rounded-xl"
+      className="relative overflow-visible rounded-xl"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...springPresets.smooth, delay: index * 0.03 }}
     >
       {/* Swipe Action Backgrounds */}
-      <div className="absolute inset-0 flex">
+      <div className="absolute inset-0 flex overflow-hidden rounded-xl">
         {/* Right action (favorite) - shows when swiping right */}
         <motion.div
           style={{ opacity: rightActionOpacity }}
@@ -252,7 +252,7 @@ export default function SwipeableTrackCard({
         dragElastic={0.15}
         onDragEnd={handleDragEnd}
         whileTap={{ cursor: "grabbing" }}
-        className="relative flex items-center gap-4 bg-[linear-gradient(145deg,rgba(18,27,37,0.98),rgba(11,17,24,0.98))] p-4 transition-shadow md:gap-5"
+        className="relative flex items-center gap-4 rounded-xl bg-[linear-gradient(145deg,rgba(18,27,37,0.98),rgba(11,17,24,0.98))] p-4 transition-shadow md:gap-5"
       >
         {/* Album Art with Play Button */}
         <div className="relative flex-shrink-0">
