@@ -24,13 +24,14 @@ export function getBaseUrl(): string {
   // and the value is used for metadata generation, not exposed to the client
   if (typeof window === "undefined") {
     try {
-      // Access server-only env var safely (will throw on client)
-      const serverUrl = process.env.NEXTAUTH_URL;
-      if (serverUrl) {
-        return serverUrl;
+      // Access validated server-only env var (will throw on client if accessed)
+      // Using env.NEXTAUTH_URL ensures Zod validation is applied
+      if (env.NEXTAUTH_URL) {
+        return env.NEXTAUTH_URL;
       }
     } catch {
       // Ignore - we're on the client or variable is not accessible
+      // This can happen if the env library throws when accessing server vars on client
     }
   }
 
