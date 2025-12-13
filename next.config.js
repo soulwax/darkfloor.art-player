@@ -99,10 +99,6 @@ const config = {
     }
     return config;
   },
-  // Suppress export errors for 404 page during build
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-  },
   // Suppress build errors for expected missing pages in App Router
   // Improved memory management: less aggressive settings to prevent request timeouts
   onDemandEntries: {
