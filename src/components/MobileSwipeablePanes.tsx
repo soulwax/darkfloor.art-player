@@ -249,6 +249,7 @@ export default function MobileSwipeablePanes({
               currentTime={player.currentTime}
               duration={player.duration}
               queue={player.queue}
+              lastAutoQueueCount={player.lastAutoQueueCount}
               onPlayPause={playerProps.onPlayPause}
               onNext={playerProps.onNext}
               onSeek={playerProps.onSeek}
