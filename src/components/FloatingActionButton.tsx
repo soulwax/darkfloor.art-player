@@ -3,7 +3,6 @@
 "use client";
 
 import { useGlobalPlayer } from "@/contexts/AudioPlayerContext";
-import { useMobilePanes } from "@/contexts/MobilePanesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { hapticLight, hapticMedium, hapticSuccess } from "@/utils/haptics";
 import { springPresets } from "@/utils/spring-animations";
@@ -32,7 +31,6 @@ export default function FloatingActionButton() {
   const isMobile = useIsMobile();
   const router = useRouter();
   const player = useGlobalPlayer();
-  const { navigateToPane, currentPane } = useMobilePanes();
 
   const rotation = useMotionValue(0);
   const scale = useTransform(rotation, [0, 45], [1, 1.1]);
@@ -47,9 +45,6 @@ export default function FloatingActionButton() {
 
   // Don't render on desktop
   if (!mounted || !isMobile) return null;
-
-  // Don't show when player pane is active (pane 0)
-  if (currentPane === 0 || currentPane === 1) return null;
 
   const quickActions: QuickAction[] = [
     {
