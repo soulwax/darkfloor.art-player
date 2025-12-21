@@ -1243,8 +1243,10 @@ export const musicRouter = createTRPCRouter({
         });
 
         // Call the HexMusic recommendation API from server-side (no CORS issues)
+        // Normalize URL to avoid double slashes (API_URL has trailing slash)
+        const apiUrl = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL;
         const response = await fetch(
-          `${API_URL}/hexmusic/recommendations/deezer`,
+          `${apiUrl}/hexmusic/recommendations/deezer`,
           {
             method: "POST",
             headers: {
@@ -1498,8 +1500,10 @@ export const musicRouter = createTRPCRouter({
         const trackNames = seedTracks.map((t) => `${t.artist.name} ${t.title}`);
 
         // Call intelligent API
+        // Normalize URL to avoid double slashes (API_URL has trailing slash)
+        const apiUrl = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL;
         const response = await fetch(
-          `${API_URL}/hexmusic/recommendations/deezer`,
+          `${apiUrl}/hexmusic/recommendations/deezer`,
           {
             method: "POST",
             headers: {

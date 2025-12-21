@@ -36,7 +36,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "dev": "node scripts/server.js",
+    "dev": "NODE_ENV=development node scripts/server.js",
     "dev:next": "next dev --turbo --port 3412",
     "pm2:start": "npm run build && pm2 start ecosystem.config.cjs --only isobelnet-de-prod --env production",
     "pm2:dev": "pm2 start ecosystem.config.cjs --only isobelnet-de-dev --env development",

@@ -40,8 +40,13 @@ async function apiRequest<T>(
 ): Promise<T> {
   const token = getAuthToken();
 
+  // Normalize URL to avoid double slashes (API_BASE_URL has trailing slash)
+  const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${normalizedEndpoint}`;
+
   console.log("[SmartQueue API] 🌐 Making API request:", {
-    url: `${API_BASE_URL}${endpoint}`,
+    url,
     method: options.method ?? "GET",
     hasToken: !!token,
   });
@@ -55,7 +60,7 @@ async function apiRequest<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(url, {
     ...options,
     headers,
   });
@@ -267,8 +272,10 @@ export async function getDeezerRecommendations(
   });
 
   try {
+    // Normalize URL to avoid double slashes (API_BASE_URL has trailing slash)
+    const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
     const response = await fetch(
-      `${API_BASE_URL}/hexmusic/recommendations/deezer`,
+      `${baseUrl}/hexmusic/recommendations/deezer`,
       {
         method: "POST",
         headers: {
