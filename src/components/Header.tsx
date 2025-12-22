@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 export default function Header() {
   const { data: session } = useSession();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Fetch current user's profile info to get their userHash
@@ -21,6 +22,13 @@ export default function Header() {
       enabled: !!session,
     },
   );
+
+  // Reset image error when session changes
+  useEffect(() => {
+    if (session?.user?.image) {
+      setImageError(false);
+    }
+  }, [session?.user?.image]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -98,13 +106,14 @@ export default function Header() {
                   aria-label="User menu"
                   aria-expanded={showUserMenu}
                 >
-                  {session.user?.image ? (
+                  {session.user?.image && !imageError ? (
                     <Image
                       src={session.user.image}
                       alt={session.user?.name ?? "User"}
                       width={24}
                       height={24}
                       className="h-6 w-6 rounded-full ring-2 ring-white/10"
+                      onError={() => setImageError(true)}
                     />
                   ) : (
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(244,178,102,0.4),rgba(88,198,177,0.4))] text-xs font-bold text-[var(--color-text)] shadow-lg shadow-[rgba(244,178,102,0.3)]">

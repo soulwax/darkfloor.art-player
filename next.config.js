@@ -91,6 +91,21 @@ const config = {
         hostname: "cdn.discordapp.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "media.discordapp.net",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "discord.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "discordapp.com",
+        pathname: "/**",
+      },
     ],
     unoptimized: process.env.ELECTRON_BUILD === "true", // Required for Electron
   },

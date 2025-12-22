@@ -1,6 +1,9 @@
 // File: src/components/ProfileHeader.tsx
 
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 interface ProfileStats {
   tracksPlayed: number;
@@ -26,6 +29,8 @@ export default function ProfileHeader({
   isShareSupported,
   onShare,
 }: ProfileHeaderProps) {
+  const [imageError, setImageError] = useState(false);
+  
   return (
     <div className="surface-panel relative mb-8 overflow-hidden p-8">
       <div className="bg-[radial-gradient(circle,rgba(244,178,102,0.2),transparent 60%)] pointer-events-none absolute -top-24 -left-16 h-72 w-72 rounded-full blur-3xl" />
@@ -34,13 +39,14 @@ export default function ProfileHeader({
       <div className="relative flex flex-col items-center gap-6 md:flex-row">
         {/* Avatar */}
         <div className="relative">
-          {profile.image ? (
+          {profile.image && !imageError ? (
             <Image
               src={profile.image}
               alt={profile.name ?? "User"}
               width={128}
               height={128}
               className="h-32 w-32 rounded-full border-4 border-[rgba(244,178,102,0.55)] shadow-lg shadow-[rgba(244,178,102,0.28)]"
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-[rgba(244,178,102,0.55)] bg-[linear-gradient(135deg,rgba(244,178,102,0.35),rgba(88,198,177,0.35))] text-5xl font-bold text-[var(--color-text)] shadow-lg shadow-[rgba(244,178,102,0.28)]">
