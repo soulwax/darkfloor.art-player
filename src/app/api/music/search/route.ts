@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const url = new URL("music/search", backendUrl);
+    // Normalize URL to avoid double slashes (backendUrl has trailing slash)
+    const normalizedBackendUrl = backendUrl.endsWith("/") ? backendUrl.slice(0, -1) : backendUrl;
+    const url = new URL("music/search", normalizedBackendUrl);
     url.searchParams.set("q", query);
     if (offset != null) {
       url.searchParams.set("offset", offset);

@@ -38,7 +38,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const url = new URL("music/stream", apiUrl);
+    // Normalize URL to avoid double slashes (apiUrl has trailing slash)
+    const normalizedApiUrl = apiUrl.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
+    const url = new URL("music/stream", normalizedApiUrl);
     url.searchParams.set("key", streamingKey);
 
     // Prioritize ID over query - ID is more specific and accurate
