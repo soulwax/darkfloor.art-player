@@ -5,11 +5,11 @@ All notable changes to darkfloor.art will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.2] - 2025-12-21
+## [0.6.4] - 2025-12-21
 
 ### Changed
 
-#### Complete Rebrand: "Starchild Music" → "isobelnet.de" → "darkfloor.art"
+#### Complete Rebrand to darkfloor.art
 
 **User-Facing Changes:**
 - **Brand Identity**: Completely rebranded from "isobelnet.de" to "darkfloor.art" across all user interfaces
@@ -24,18 +24,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**: Updated all README, CLAUDE.md, and setup documentation files
 - **Scripts**: Updated all setup scripts, server banners, and diagnostic commands
 - **Electron Storage**: Updated persistent storage partition name for Electron builds
+- **Base URL**: Updated default fallback URL to `https://darkfloor.art`
 
-**Files Modified (24 total):**
+**Files Modified (30+ total):**
 - UI Components: HamburgerMenu, Header, WelcomeHero, EnhancedTrackCard, SwipeableTrackCard
 - App Pages: layout, page, license, user profile
-- Configuration: package.json, ecosystem.config.cjs, electron/main.cjs
-- Documentation: README.md, CLAUDE.md, CHANGELOG.md, DIAGNOSTIC.md, electron docs
+- Configuration: package.json, ecosystem.config.cjs, electron/main.cjs, getBaseUrl.ts
+- Documentation: README.md, CLAUDE.md, CHANGELOG.md, electron docs
 - Scripts: server.js, pm2-setup.sh, setup-database.sh, verify-build.js
-- Styles: globals.css, smartQueue service
+- Styles: globals.css
+- Services: smartQueue.ts
 
-**Preserved:**
-- GitHub repository URLs (actual source location)
-- Deployment paths in PM2 configuration
+## [0.6.3] - 2025-12-21
+
+### Added
+
+#### Enhanced Visual Features
+
+- **Improved Visual Components**: Enhanced visual rendering and display components throughout the application
+- **Visual Enhancements**: Added more visual elements and improved visual feedback across the user interface
+- **Visual Polish**: Refined visual styling and animations for a more immersive experience
+
+## [0.6.2] - 2025-12-21
+
+### Changed
+
+- Internal improvements and bug fixes
 
 ## [0.6.0] - 2025-12-09
 
