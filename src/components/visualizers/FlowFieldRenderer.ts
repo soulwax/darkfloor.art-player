@@ -8389,54 +8389,133 @@ export class FlowFieldRenderer {
     ctx.save();
     ctx.translate(this.centerX, this.centerY);
 
-    const maxRadius = Math.min(this.width, this.height) * 0.45;
-    const nightmares = 10;
+    // HYPER-OPTIMIZATION: Pre-calculate nightmare parameters
+    const maxRadius = Math.min(this.width, this.height) * 0.5;
+    const nightmares = 14;
+    const angleStep = FlowFieldRenderer.TWO_PI / nightmares;
 
-    for (let i = 0; i < nightmares; i++) {
-      const angle = (Math.PI * 2 * i) / nightmares + this.time * 0.0007;
-      const radius = maxRadius * (0.2 + (i % 3) * 0.15);
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
+    // ENHANCED: Writhing tentacles/tendrils emanating chaotic energy
+    ctx.globalCompositeOperation = "lighter";
+    const tentacleCount = 16;
+    const tentacleAngleStep = FlowFieldRenderer.TWO_PI / tentacleCount;
 
-      const hue = (this.hueBase + 20 + i * 15) % 360;
-      const size = 15 + Math.sin(this.time * 0.004 + i) * 6 + midIntensity * 5;
-      const alpha = 0.5 + Math.sin(this.time * 0.003 + i) * 0.25 + midIntensity * 0.3;
+    for (let i = 0; i < tentacleCount; i++) {
+      const baseAngle = tentacleAngleStep * i;
+      const tentacleLength = maxRadius * (0.7 + this.fastSin(this.time * 0.004 + i) * 0.2);
+      const segments = 12;
+      const segmentLength = tentacleLength / segments;
 
-      const nightmareGradient = ctx.createRadialGradient(x, y, 0, x, y, size);
-      nightmareGradient.addColorStop(0, `hsla(${hue}, 100%, 45%, ${alpha})`);
-      nightmareGradient.addColorStop(0.4, `hsla(${hue + 20}, 95%, 40%, ${alpha * 0.8})`);
-      nightmareGradient.addColorStop(1, `hsla(${hue + 40}, 90%, 35%, 0)`);
-
-      ctx.fillStyle = nightmareGradient;
-      ctx.shadowBlur = 30;
-      ctx.shadowColor = `hsla(${hue}, 100%, 40%, 0.8)`;
       ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(0, 0);
 
-      const spikes = 6;
-      ctx.strokeStyle = `hsla(${hue}, 100%, 50%, ${alpha * 0.9})`;
-      ctx.lineWidth = 2 + bassIntensity * 1.5;
-      ctx.beginPath();
-      for (let spike = 0; spike < spikes; spike++) {
-        const spikeAngle = (Math.PI * 2 * spike) / spikes + this.time * 0.002;
-        const spikeX = x + Math.cos(spikeAngle) * size;
-        const spikeY = y + Math.sin(spikeAngle) * size;
-        if (spike === 0) ctx.moveTo(spikeX, spikeY);
-        else ctx.lineTo(spikeX, spikeY);
+      let currentX = 0;
+      let currentY = 0;
+      let currentAngle = baseAngle + this.time * 0.002 * (i % 2 === 0 ? 1 : -1);
+
+      for (let seg = 0; seg < segments; seg++) {
+        // Chaotic, writhing motion
+        const chaos1 = this.fastSin(this.time * 0.008 + i + seg * 0.3) * 0.4;
+        const chaos2 = this.fastCos(this.time * 0.012 + i * 0.5 + seg * 0.2) * 0.3;
+        const audioDistortion = (audioIntensity - 0.5) * 0.5;
+        currentAngle += chaos1 + chaos2 + audioDistortion;
+
+        currentX += this.fastCos(currentAngle) * segmentLength;
+        currentY += this.fastSin(currentAngle) * segmentLength;
+        ctx.lineTo(currentX, currentY);
       }
-      ctx.closePath();
+
+      const tentacleHue = this.fastMod360(this.hueBase + 15 + i * 18);
+      const gradient = ctx.createLinearGradient(0, 0, currentX, currentY);
+      gradient.addColorStop(0, this.hsla(tentacleHue, 100, 50, 0.6 + bassIntensity * 0.3));
+      gradient.addColorStop(0.5, this.hsla(tentacleHue + 15, 95, 45, 0.4 + midIntensity * 0.2));
+      gradient.addColorStop(1, this.hsla(tentacleHue + 30, 90, 40, 0));
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 3 + bassIntensity * 4;
+      ctx.lineCap = "round";
+      ctx.shadowBlur = 20 + audioIntensity * 15;
+      ctx.shadowColor = this.hsla(tentacleHue, 100, 45, 0.7);
       ctx.stroke();
     }
 
-    const fuelCore = ctx.createRadialGradient(0, 0, 0, 0, 0, maxRadius * 0.26);
-    fuelCore.addColorStop(0, `hsla(${this.hueBase + 30}, 100%, 55%, ${0.95 + audioIntensity * 0.05})`);
-    fuelCore.addColorStop(0.5, `hsla(${this.hueBase + 20}, 100%, 45%, ${0.8 + bassIntensity * 0.15})`);
-    fuelCore.addColorStop(1, `hsla(${this.hueBase + 10}, 100%, 35%, 0)`);
+    ctx.globalCompositeOperation = "source-over";
+
+    // ENHANCED: Distorted nightmare orbs with glitch effect
+    for (let i = 0; i < nightmares; i++) {
+      const angle = angleStep * i + this.time * 0.0009;
+      const orbitRadius = maxRadius * (0.25 + (i % 4) * 0.12);
+
+      // Glitch offset for unstable appearance
+      const glitchX = (Math.random() - 0.5) * 5 * bassIntensity;
+      const glitchY = (Math.random() - 0.5) * 5 * bassIntensity;
+
+      const x = this.fastCos(angle) * orbitRadius + glitchX;
+      const y = this.fastSin(angle) * orbitRadius + glitchY;
+
+      const hue = this.fastMod360(this.hueBase + 20 + i * 22);
+      const size = 18 + this.fastSin(this.time * 0.005 + i) * 7 + midIntensity * 8;
+      const pulseAlpha = 0.6 + this.fastSin(this.time * 0.004 + i) * 0.3 + audioIntensity * 0.3;
+
+      // Morphing nightmare shape
+      const morphVertices = 8;
+      const morphAngleStep = FlowFieldRenderer.TWO_PI / morphVertices;
+
+      ctx.beginPath();
+      for (let v = 0; v <= morphVertices; v++) {
+        const vAngle = morphAngleStep * v + this.time * 0.003;
+        const distortion = 1 + this.fastSin(vAngle * 3 + this.time * 0.01) * 0.3 * midIntensity;
+        const vRadius = size * distortion;
+        const vx = x + this.fastCos(vAngle) * vRadius;
+        const vy = y + this.fastSin(vAngle) * vRadius;
+        if (v === 0) ctx.moveTo(vx, vy);
+        else ctx.lineTo(vx, vy);
+      }
+      ctx.closePath();
+
+      const nightmareGradient = ctx.createRadialGradient(x, y, 0, x, y, size * 1.5);
+      nightmareGradient.addColorStop(0, this.hsla(hue, 100, 50, pulseAlpha));
+      nightmareGradient.addColorStop(0.4, this.hsla(hue + 25, 95, 42, pulseAlpha * 0.8));
+      nightmareGradient.addColorStop(1, this.hsla(hue + 50, 90, 35, 0));
+
+      ctx.fillStyle = nightmareGradient;
+      ctx.shadowBlur = 35 + bassIntensity * 20;
+      ctx.shadowColor = this.hsla(hue, 100, 45, 0.9);
+      ctx.fill();
+
+      // ENHANCED: Chaotic spikes with audio reactivity
+      const spikes = 8 + ((bassIntensity * 4) | 0);
+      const spikeAngleStep = FlowFieldRenderer.TWO_PI / spikes;
+
+      ctx.strokeStyle = this.hsla(hue, 100, 60, pulseAlpha * 0.9);
+      ctx.lineWidth = 2.5 + bassIntensity * 2;
+
+      for (let spike = 0; spike < spikes; spike++) {
+        const spikeAngle = spikeAngleStep * spike + this.time * 0.003;
+        const spikeLength = size * (1.2 + this.fastSin(this.time * 0.006 + spike) * 0.4);
+        const spikeX = x + this.fastCos(spikeAngle) * spikeLength;
+        const spikeY = y + this.fastSin(spikeAngle) * spikeLength;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(spikeX, spikeY);
+        ctx.stroke();
+      }
+    }
+
+    // ENHANCED: Pulsing, unstable nightmare core
+    const coreRadius = maxRadius * (0.3 + bassIntensity * 0.08);
+    const coreDistortion = 1 + this.fastSin(this.time * 0.005) * 0.15 * audioIntensity;
+    const fuelCore = ctx.createRadialGradient(0, 0, 0, 0, 0, coreRadius * coreDistortion);
+    fuelCore.addColorStop(0, this.hsla(this.hueBase + 35, 100, 60, 0.98 + audioIntensity * 0.05));
+    fuelCore.addColorStop(0.3, this.hsla(this.hueBase + 25, 100, 50, 0.85 + bassIntensity * 0.15));
+    fuelCore.addColorStop(0.7, this.hsla(this.hueBase + 15, 100, 40, 0.6 + midIntensity * 0.2));
+    fuelCore.addColorStop(1, this.hsla(this.hueBase + 5, 100, 30, 0));
 
     ctx.fillStyle = fuelCore;
+    ctx.shadowBlur = 60 + audioIntensity * 40;
+    ctx.shadowColor = this.hsla(this.hueBase + 30, 100, 55, 0.95);
     ctx.beginPath();
-    ctx.arc(0, 0, maxRadius * 0.26, 0, Math.PI * 2);
+    ctx.arc(0, 0, coreRadius * coreDistortion, 0, FlowFieldRenderer.TWO_PI);
     ctx.fill();
 
     ctx.restore();
