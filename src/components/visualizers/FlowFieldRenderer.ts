@@ -4468,43 +4468,50 @@ export class FlowFieldRenderer {
   ): void {
     const ctx = this.ctx;
     const gridSize = 6;
+
+    // HYPER-OPTIMIZATION: Pre-calculate crystal grid parameters
     const spacing = Math.min(this.width, this.height) / gridSize;
+    const timePulse = this.time * 0.005;
+    const timeHue = this.time * 0.2;
+    const timeRotation = this.time * 0.001;
+    const pulseFreq = 0.3;
+    const crystalAlpha = 0.6 + bassIntensity * 0.4;
+    const twoPi = FlowFieldRenderer.TWO_PI;
+    const pi3 = Math.PI / 3;
 
     // Draw crystal lattice
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
         const x = (col + 0.5) * spacing;
         const y = (row + 0.5) * spacing;
-        const pulse =
-          Math.sin(this.time * 0.005 + row * 0.3 + col * 0.3) * 0.5 + 0.5;
+        // HYPER-OPTIMIZATION: Use fast trig for pulse calculation
+        const pulse = this.fastSin(timePulse + row * pulseFreq + col * pulseFreq) * 0.5 + 0.5;
         const size = 20 + pulse * 20 + audioIntensity * 15;
-        const hue =
-          (this.hueBase + row * 30 + col * 30 + this.time * 0.2) % 360;
+        const hue = this.fastMod360(this.hueBase + row * 30 + col * 30 + timeHue);
 
         // Crystal glow
+        const size2 = size * 2;
+        const size03 = size * 0.3;
         const gradient = ctx.createRadialGradient(
           x,
           y,
-          size * 0.3,
+          size03,
           x,
           y,
-          size * 2,
+          size2,
         );
-        gradient.addColorStop(
-          0,
-          `hsla(${hue}, 90%, 70%, ${0.6 + bassIntensity * 0.4})`,
-        );
-        gradient.addColorStop(1, `hsla(${hue}, 80%, 60%, 0)`);
+        gradient.addColorStop(0, this.hsla(hue, 90, 70, crystalAlpha));
+        gradient.addColorStop(1, this.hsla(hue, 80, 60, 0));
 
         ctx.fillStyle = gradient;
-        ctx.fillRect(x - size * 2, y - size * 2, size * 4, size * 4);
+        ctx.fillRect(x - size2, y - size2, size2 * 2, size2 * 2);
 
         // Crystal shape (hexagon)
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(this.time * 0.001 + row + col);
+        ctx.rotate(timeRotation + row + col);
 
-        ctx.strokeStyle = `hsla(${hue}, 85%, 65%, 0.8)`;
+        ctx.strokeStyle = this.hsla(hue, 85, 65, 0.8);
         ctx.fillStyle = `hsla(${hue}, 75%, 60%, ${0.3 + midIntensity * 0.3})`;
         ctx.lineWidth = 2;
 
