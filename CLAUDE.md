@@ -186,7 +186,7 @@ const addToHistory = api.music.addToHistory.useMutation();
 **Pattern Categories:**
 - Sacred geometry (Flower of Life, Metatron's Cube, Mandala)
 - Occult symbols (Tarot, Pentagram, Sigils, Runes)
-- Natural phenomena (Aurora, Vortex, Phoenix, Dragon)
+- Natural phenomena (Vortex, Phoenix, Dragon)
 - Abstract (Fractal, Flow Field, Particles, Waves)
 
 ## Mobile UI Implementation Details

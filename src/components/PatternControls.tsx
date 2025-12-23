@@ -93,7 +93,6 @@ export default function PatternControls({
     matrixSpeed: number;
     tunnelSpeed: number;
     galaxyArmCount: number;
-    auroraIntensity: number;
     mandalaLayers: number;
     tarotCardSize: number;
     tarotCardCount: number;
@@ -181,7 +180,6 @@ export default function PatternControls({
         matrixSpeed: renderer.getMatrixSpeed(),
         tunnelSpeed: renderer.getTunnelSpeed(),
         galaxyArmCount: renderer.getGalaxyArmCount(),
-        auroraIntensity: renderer.getAuroraIntensity(),
         mandalaLayers: renderer.getMandalaLayers(),
         tarotCardSize: renderer.getTarotCardSize(),
         tarotCardCount: renderer.getTarotCardCount(),
@@ -735,25 +733,6 @@ export default function PatternControls({
                 step={1}
                 decimals={0}
                 onChange={(value) => renderer.setGalaxyArmCount(value)}
-              />
-            </div>
-          )}
-
-          {/* Aurora Controls */}
-          {rawCurrentPattern === "aurora" && (
-            <div className="mb-6 space-y-4">
-              <h4 className="text-sm font-semibold text-[var(--color-text)]">
-                Aurora Controls
-              </h4>
-              <SliderControl
-                label="Intensity"
-                value={patternParams.auroraIntensity}
-                min={0.1}
-                max={3.0}
-                step={0.1}
-                decimals={1}
-                unit="x"
-                onChange={(value) => renderer.setAuroraIntensity(value)}
               />
             </div>
           )}
