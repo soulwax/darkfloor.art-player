@@ -5574,8 +5574,17 @@ export class FlowFieldRenderer {
 
     const circleRadius = radius * 0.2;
 
+    // HYPER-OPTIMIZATION: Pre-calculate metatron parameters
+    const twoPi = FlowFieldRenderer.TWO_PI;
+    const timePulse = this.time * 0.004;
+    const connectionAlpha = 0.3 + audioIntensity * 0.2;
+    const maxDist = radius * 1.2;
+    const maxDistSq = maxDist * maxDist; // Use squared distance for comparison
+    const inv6 = 1 / 6;
+    const hexAngleStep = twoPi * inv6;
+
     // Draw connections (edges of platonic solids) - optimized with single path
-    ctx.strokeStyle = `hsla(${this.hueBase}, 70%, 60%, ${0.3 + audioIntensity * 0.2})`;
+    ctx.strokeStyle = this.hsla(this.hueBase, 70, 60, connectionAlpha);
     ctx.lineWidth = 2;
 
     ctx.beginPath();
@@ -5587,10 +5596,10 @@ export class FlowFieldRenderer {
 
         const dx = to.x - from.x;
         const dy = to.y - from.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const distSq = dx * dx + dy * dy;
 
-        // Only connect circles within certain distance
-        if (dist < radius * 1.2) {
+        // HYPER-OPTIMIZATION: Use squared distance comparison (avoid sqrt)
+        if (distSq < maxDistSq) {
           ctx.moveTo(from.x, from.y);
           ctx.lineTo(to.x, to.y);
         }
@@ -5600,57 +5609,62 @@ export class FlowFieldRenderer {
 
     // Draw circles
     circlePositions.forEach((pos, index) => {
-      const hue = (this.hueBase + index * 28) % 360;
-      const pulse = Math.sin(this.time * 0.004 + index * 0.5) * 0.2 + 0.8;
+      const hue = this.fastMod360(this.hueBase + index * 28);
+      // HYPER-OPTIMIZATION: Use fast trig for pulse calculation
+      const pulse = this.fastSin(timePulse + index * 0.5) * 0.2 + 0.8;
       const size = circleRadius * pulse + (index === 0 ? midIntensity * 15 : 0);
 
       // Glow
+      const size2 = size * 2;
+      const size4 = size * 4;
+      const size03 = size * 0.3;
+      const glowAlpha = 0.5 + audioIntensity * 0.3;
       const gradient = ctx.createRadialGradient(
         pos.x,
         pos.y,
-        size * 0.3,
+        size03,
         pos.x,
         pos.y,
-        size * 2,
+        size2,
       );
-      gradient.addColorStop(
-        0,
-        `hsla(${hue}, 90%, 70%, ${0.5 + audioIntensity * 0.3})`,
-      );
-      gradient.addColorStop(1, `hsla(${hue}, 80%, 60%, 0)`);
+      gradient.addColorStop(0, this.hsla(hue, 90, 70, glowAlpha));
+      gradient.addColorStop(1, this.hsla(hue, 80, 60, 0));
 
       ctx.fillStyle = gradient;
-      ctx.fillRect(pos.x - size * 2, pos.y - size * 2, size * 4, size * 4);
+      ctx.fillRect(pos.x - size2, pos.y - size2, size4, size4);
 
       // Circle
-      ctx.fillStyle = `hsla(${hue}, 85%, 65%, 0.8)`;
-      ctx.strokeStyle = `hsla(${hue + 30}, 90%, 70%, 0.9)`;
+      const hue30 = this.fastMod360(hue + 30);
+      ctx.fillStyle = this.hsla(hue, 85, 65, 0.8);
+      ctx.strokeStyle = this.hsla(hue30, 90, 70, 0.9);
       ctx.lineWidth = 3;
 
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+      ctx.arc(pos.x, pos.y, size, 0, twoPi);
       ctx.fill();
       ctx.stroke();
 
       // Inner detail
-      ctx.strokeStyle = `hsla(${hue + 60}, 95%, 75%, 0.7)`;
+      ctx.strokeStyle = this.hsla(this.fastMod360(hue + 60), 95, 75, 0.7);
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, size * 0.5, 0, Math.PI * 2);
+      ctx.arc(pos.x, pos.y, size * 0.5, 0, twoPi);
       ctx.stroke();
     });
 
     // Outer sacred geometry
     const hexPoints = [];
     for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI * 2 * i) / 6;
+      const angle = hexAngleStep * i;
+      // HYPER-OPTIMIZATION: Use fast trig for hex points
       hexPoints.push({
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
+        x: this.fastCos(angle) * radius,
+        y: this.fastSin(angle) * radius,
       });
     }
 
-    ctx.strokeStyle = `hsla(${this.hueBase + 180}, 75%, 65%, ${0.5 + bassIntensity * 0.3})`;
+    const hexStrokeAlpha = 0.5 + bassIntensity * 0.3;
+    ctx.strokeStyle = this.hsla(this.fastMod360(this.hueBase + 180), 75, 65, hexStrokeAlpha);
     ctx.lineWidth = 3;
 
     // Hexagon
@@ -5698,94 +5712,96 @@ export class FlowFieldRenderer {
     ctx.save();
     ctx.translate(this.centerX, this.centerY);
 
+    // HYPER-OPTIMIZATION: Pre-calculate vesica piscis parameters
+    const twoPi = FlowFieldRenderer.TWO_PI;
+    const separationHalf = separation * 0.5;
+    const separationHalfSq = separationHalf * separationHalf;
+    const radiusSq = radius * radius;
+    const radius03 = radius * 0.3;
+    const radius07 = radius * 0.7;
+    const circleAlpha = 0.4 + audioIntensity * 0.3;
+    const vesicaAlpha = 0.6 + trebleIntensity * 0.4;
+
     // Left circle
-    const leftX = -separation / 2;
+    const leftX = -separationHalf;
     const leftHue = this.hueBase;
 
     const leftGradient = ctx.createRadialGradient(
       leftX,
       0,
-      radius * 0.3,
+      radius03,
       leftX,
       0,
       radius,
     );
-    leftGradient.addColorStop(
-      0,
-      `hsla(${leftHue}, 90%, 70%, ${0.4 + audioIntensity * 0.3})`,
-    );
-    leftGradient.addColorStop(1, `hsla(${leftHue}, 80%, 60%, 0.1)`);
+    leftGradient.addColorStop(0, this.hsla(leftHue, 90, 70, circleAlpha));
+    leftGradient.addColorStop(1, this.hsla(leftHue, 80, 60, 0.1));
 
     ctx.fillStyle = leftGradient;
-    ctx.strokeStyle = `hsla(${leftHue}, 85%, 65%, 0.8)`;
+    ctx.strokeStyle = this.hsla(leftHue, 85, 65, 0.8);
     ctx.lineWidth = 3;
 
     ctx.beginPath();
-    ctx.arc(leftX, 0, radius, 0, Math.PI * 2);
+    ctx.arc(leftX, 0, radius, 0, twoPi);
     ctx.fill();
     ctx.stroke();
 
     // Right circle
-    const rightX = separation / 2;
-    const rightHue = (this.hueBase + 120) % 360;
+    const rightX = separationHalf;
+    const rightHue = this.fastMod360(this.hueBase + 120);
 
     const rightGradient = ctx.createRadialGradient(
       rightX,
       0,
-      radius * 0.3,
+      radius03,
       rightX,
       0,
       radius,
     );
-    rightGradient.addColorStop(
-      0,
-      `hsla(${rightHue}, 90%, 70%, ${0.4 + audioIntensity * 0.3})`,
-    );
-    rightGradient.addColorStop(1, `hsla(${rightHue}, 80%, 60%, 0.1)`);
+    rightGradient.addColorStop(0, this.hsla(rightHue, 90, 70, circleAlpha));
+    rightGradient.addColorStop(1, this.hsla(rightHue, 80, 60, 0.1));
 
     ctx.fillStyle = rightGradient;
-    ctx.strokeStyle = `hsla(${rightHue}, 85%, 65%, 0.8)`;
+    ctx.strokeStyle = this.hsla(rightHue, 85, 65, 0.8);
     ctx.lineWidth = 3;
 
     ctx.beginPath();
-    ctx.arc(rightX, 0, radius, 0, Math.PI * 2);
+    ctx.arc(rightX, 0, radius, 0, twoPi);
     ctx.fill();
     ctx.stroke();
 
     // Highlight the vesica piscis (intersection)
     ctx.save();
     ctx.beginPath();
-    ctx.arc(leftX, 0, radius, 0, Math.PI * 2);
+    ctx.arc(leftX, 0, radius, 0, twoPi);
     ctx.clip();
 
-    const vesicaHue = (this.hueBase + 240) % 360;
+    const vesicaHue = this.fastMod360(this.hueBase + 240);
     const vesicaGradient = ctx.createRadialGradient(
       0,
       0,
       10,
       0,
       0,
-      radius * 0.7,
+      radius07,
     );
-    vesicaGradient.addColorStop(
-      0,
-      `hsla(${vesicaHue}, 95%, 75%, ${0.6 + trebleIntensity * 0.4})`,
-    );
-    vesicaGradient.addColorStop(1, `hsla(${vesicaHue}, 85%, 65%, 0.2)`);
+    vesicaGradient.addColorStop(0, this.hsla(vesicaHue, 95, 75, vesicaAlpha));
+    vesicaGradient.addColorStop(1, this.hsla(vesicaHue, 85, 65, 0.2));
 
     ctx.fillStyle = vesicaGradient;
     ctx.beginPath();
-    ctx.arc(rightX, 0, radius, 0, Math.PI * 2);
+    ctx.arc(rightX, 0, radius, 0, twoPi);
     ctx.fill();
 
     ctx.restore();
 
     // Outline the vesica piscis
-    const intersectionHeight = Math.sqrt(
-      radius * radius - (separation / 2) * (separation / 2),
-    );
+    // HYPER-OPTIMIZATION: Use fast sqrt for intersection height
+    const intersectionHeightSq = radiusSq - separationHalfSq;
+    const intersectionHeight = this.fastSqrt(intersectionHeightSq);
 
-    ctx.strokeStyle = `hsla(${vesicaHue}, 90%, 70%, ${0.9 + audioIntensity * 0.1})`;
+    const vesicaStrokeAlpha = 0.9 + audioIntensity * 0.1;
+    ctx.strokeStyle = this.hsla(vesicaHue, 90, 70, vesicaStrokeAlpha);
     ctx.lineWidth = 4;
 
     ctx.beginPath();
@@ -5798,7 +5814,7 @@ export class FlowFieldRenderer {
     // Sacred geometry additions
     const verticalLineY = intersectionHeight * (0.8 + audioIntensity * 0.2);
 
-    ctx.strokeStyle = `hsla(${this.hueBase + 60}, 80%, 65%, 0.6)`;
+    ctx.strokeStyle = this.hsla(this.fastMod360(this.hueBase + 60), 80, 65, 0.6);
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
 
