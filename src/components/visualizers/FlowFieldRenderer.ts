@@ -4512,14 +4512,15 @@ export class FlowFieldRenderer {
         ctx.rotate(timeRotation + row + col);
 
         ctx.strokeStyle = this.hsla(hue, 85, 65, 0.8);
-        ctx.fillStyle = `hsla(${hue}, 75%, 60%, ${0.3 + midIntensity * 0.3})`;
+        ctx.fillStyle = this.hsla(hue, 75, 60, 0.3 + midIntensity * 0.3);
         ctx.lineWidth = 2;
 
+        // HYPER-OPTIMIZATION: Use fast trig for hexagon vertices
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI * 2 * i) / 6;
-          const cx = Math.cos(angle) * size;
-          const cy = Math.sin(angle) * size;
+          const angle = twoPi * i * (1 / 6);
+          const cx = this.fastCos(angle) * size;
+          const cy = this.fastSin(angle) * size;
           if (i === 0) ctx.moveTo(cx, cy);
           else ctx.lineTo(cx, cy);
         }
@@ -4528,12 +4529,12 @@ export class FlowFieldRenderer {
         ctx.stroke();
 
         // Inner facets
-        ctx.strokeStyle = `hsla(${hue + 30}, 90%, 70%, 0.5)`;
+        ctx.strokeStyle = this.hsla(this.fastMod360(hue + 30), 90, 70, 0.5);
         ctx.lineWidth = 1;
         for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI * 2 * i) / 6;
-          const cx = Math.cos(angle) * size;
-          const cy = Math.sin(angle) * size;
+          const angle = twoPi * i * (1 / 6);
+          const cx = this.fastCos(angle) * size;
+          const cy = this.fastSin(angle) * size;
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.lineTo(cx, cy);
@@ -4543,9 +4544,10 @@ export class FlowFieldRenderer {
         ctx.restore();
 
         // Connect to neighbors
+        const connectionAlpha = 0.2 + audioIntensity * 0.2;
         if (col < gridSize - 1) {
           const nextX = (col + 1.5) * spacing;
-          ctx.strokeStyle = `hsla(${hue}, 70%, 60%, ${0.2 + audioIntensity * 0.2})`;
+          ctx.strokeStyle = this.hsla(hue, 70, 60, connectionAlpha);
           ctx.lineWidth = 1;
           ctx.setLineDash([5, 5]);
           ctx.beginPath();
@@ -4556,7 +4558,7 @@ export class FlowFieldRenderer {
         }
         if (row < gridSize - 1) {
           const nextY = (row + 1.5) * spacing;
-          ctx.strokeStyle = `hsla(${hue}, 70%, 60%, ${0.2 + audioIntensity * 0.2})`;
+          ctx.strokeStyle = this.hsla(hue, 70, 60, connectionAlpha);
           ctx.lineWidth = 1;
           ctx.setLineDash([5, 5]);
           ctx.beginPath();
@@ -4576,95 +4578,111 @@ export class FlowFieldRenderer {
   ): void {
     const ctx = this.ctx;
     const phases = 8;
+
+    // HYPER-OPTIMIZATION: Pre-calculate moon phases parameters
     const radius = 200 + bassIntensity * 80;
     const moonSize = 40 + trebleIntensity * 20;
+    const invPhases = 1 / phases;
+    const timePhase = this.time * 0.001;
+    const timeStar = this.time * 0.003;
+    const timeStarDist = this.time * 0.01;
+    const twoPi = FlowFieldRenderer.TWO_PI;
+    const angleStep = twoPi * invPhases;
+    const inv3 = 1 / 3;
+    const starAngleStep = twoPi * inv3;
+    const moonHue = this.fastMod360(this.hueBase + 180);
+    const moonGlowAlpha = 0.6 + audioIntensity * 0.4;
+    const moonSize2 = moonSize * 2;
+    const moonSize4 = moonSize * 4;
+    const moonSizeHalf = moonSize * 0.5;
 
     // Orbital ring
-    ctx.strokeStyle = `hsla(${this.hueBase}, 60%, 50%, 0.3)`;
+    ctx.strokeStyle = this.hsla(this.hueBase, 60, 50, 0.3);
     ctx.lineWidth = 2;
     ctx.setLineDash([10, 10]);
     ctx.beginPath();
-    ctx.arc(this.centerX, this.centerY, radius, 0, Math.PI * 2);
+    ctx.arc(this.centerX, this.centerY, radius, 0, twoPi);
     ctx.stroke();
     ctx.setLineDash([]);
 
     // Draw phases
     for (let i = 0; i < phases; i++) {
-      const angle = (Math.PI * 2 * i) / phases + this.time * 0.001;
-      const x = this.centerX + Math.cos(angle) * radius;
-      const y = this.centerY + Math.sin(angle) * radius;
-      const phase = i / phases;
+      const angle = angleStep * i + timePhase;
+      // HYPER-OPTIMIZATION: Use fast trig for moon position
+      const x = this.centerX + this.fastCos(angle) * radius;
+      const y = this.centerY + this.fastSin(angle) * radius;
+      const phase = i * invPhases;
 
       // Moon glow
       const gradient = ctx.createRadialGradient(
         x,
         y,
-        moonSize * 0.5,
+        moonSizeHalf,
         x,
         y,
-        moonSize * 2,
+        moonSize2,
       );
-      gradient.addColorStop(
-        0,
-        `hsla(${this.hueBase + 180}, 80%, 80%, ${0.6 + audioIntensity * 0.4})`,
-      );
-      gradient.addColorStop(1, `hsla(${this.hueBase + 180}, 70%, 70%, 0)`);
+      gradient.addColorStop(0, this.hsla(moonHue, 80, 80, moonGlowAlpha));
+      gradient.addColorStop(1, this.hsla(moonHue, 70, 70, 0));
 
       ctx.fillStyle = gradient;
       ctx.fillRect(
-        x - moonSize * 2,
-        y - moonSize * 2,
-        moonSize * 4,
-        moonSize * 4,
+        x - moonSize2,
+        y - moonSize2,
+        moonSize4,
+        moonSize4,
       );
 
       // Full moon circle
-      ctx.fillStyle = `hsla(${this.hueBase + 180}, 70%, 80%, 0.9)`;
+      ctx.fillStyle = this.hsla(moonHue, 70, 80, 0.9);
       ctx.beginPath();
-      ctx.arc(x, y, moonSize, 0, Math.PI * 2);
+      ctx.arc(x, y, moonSize, 0, twoPi);
       ctx.fill();
 
       // Shadow for phase
       if (phase < 0.5) {
         // Waxing
-        const shadowWidth = moonSize * 2 * (1 - phase * 2);
+        const shadowWidth = moonSize2 * (1 - phase * 2);
         ctx.fillStyle = `rgba(0, 0, 20, 0.8)`;
         ctx.beginPath();
-        ctx.arc(x - moonSize + shadowWidth, y, moonSize, 0, Math.PI * 2);
+        ctx.arc(x - moonSize + shadowWidth, y, moonSize, 0, twoPi);
         ctx.fill();
       } else {
         // Waning
-        const shadowWidth = moonSize * 2 * ((phase - 0.5) * 2);
+        const shadowWidth = moonSize2 * ((phase - 0.5) * 2);
         ctx.fillStyle = `rgba(0, 0, 20, 0.8)`;
         ctx.beginPath();
-        ctx.arc(x + moonSize - shadowWidth, y, moonSize, 0, Math.PI * 2);
+        ctx.arc(x + moonSize - shadowWidth, y, moonSize, 0, twoPi);
         ctx.fill();
       }
 
       // Phase label stars
+      const starSize = 2 + audioIntensity * 3;
+      const starHue = this.fastMod360(this.hueBase + 60);
       for (let j = 0; j < 3; j++) {
-        const starAngle = (Math.PI * 2 * j) / 3 + this.time * 0.003;
-        const starDist = moonSize + 20 + Math.sin(this.time * 0.01 + j) * 5;
-        const starX = x + Math.cos(starAngle) * starDist;
-        const starY = y + Math.sin(starAngle) * starDist;
-        const starSize = 2 + audioIntensity * 3;
+        const starAngle = starAngleStep * j + timeStar;
+        // HYPER-OPTIMIZATION: Use fast trig for star position
+        const starDist = moonSize + 20 + this.fastSin(timeStarDist + j) * 5;
+        const starX = x + this.fastCos(starAngle) * starDist;
+        const starY = y + this.fastSin(starAngle) * starDist;
 
-        ctx.fillStyle = `hsla(${this.hueBase + 60}, 90%, 70%, 0.7)`;
+        ctx.fillStyle = this.hsla(starHue, 90, 70, 0.7);
         ctx.beginPath();
-        ctx.arc(starX, starY, starSize, 0, Math.PI * 2);
+        ctx.arc(starX, starY, starSize, 0, twoPi);
         ctx.fill();
       }
     }
 
     // Central celestial point
-    ctx.fillStyle = `hsla(${this.hueBase}, 80%, 60%, ${0.6 + audioIntensity * 0.4})`;
+    const centerAlpha = 0.6 + audioIntensity * 0.4;
+    ctx.fillStyle = this.hsla(this.hueBase, 80, 60, centerAlpha);
     ctx.beginPath();
     ctx.arc(
       this.centerX,
       this.centerY,
       15 + bassIntensity * 10,
       0,
-      Math.PI * 2,
+      twoPi,
     );
     ctx.fill();
   }
@@ -4681,59 +4699,78 @@ export class FlowFieldRenderer {
     ctx.translate(this.centerX, this.centerY);
     ctx.rotate(this.time * 0.0005);
 
+    // HYPER-OPTIMIZATION: Pre-calculate astrolabe parameters
+    const twoPi = FlowFieldRenderer.TWO_PI;
+    const pi180 = Math.PI / 180;
+    const halfPi = Math.PI * 0.5;
+    const inv5 = 1 / 5;
+    const timePlanet = this.time * 0.001;
+    const pointerAlpha = 0.7 + audioIntensity * 0.3;
+
     // Outer rim
-    ctx.strokeStyle = `hsla(${this.hueBase}, 75%, 60%, 0.8)`;
+    ctx.strokeStyle = this.hsla(this.hueBase, 75, 60, 0.8);
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.arc(0, 0, outerRadius, 0, Math.PI * 2);
+    ctx.arc(0, 0, outerRadius, 0, twoPi);
     ctx.stroke();
 
     // Degree markings
     for (let i = 0; i < 360; i += 10) {
-      const angle = (i * Math.PI) / 180;
+      const angle = i * pi180;
       const innerR = i % 30 === 0 ? outerRadius - 20 : outerRadius - 10;
       const lineWidth = i % 30 === 0 ? 3 : 1;
 
-      ctx.strokeStyle = `hsla(${this.hueBase + i}, 70%, 60%, 0.6)`;
+      // HYPER-OPTIMIZATION: Use fast trig for degree markings
+      const cosAngle = this.fastCos(angle);
+      const sinAngle = this.fastSin(angle);
+      ctx.strokeStyle = this.hsla(this.fastMod360(this.hueBase + i), 70, 60, 0.6);
       ctx.lineWidth = lineWidth;
 
       ctx.beginPath();
-      ctx.moveTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
-      ctx.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius);
+      ctx.moveTo(cosAngle * innerR, sinAngle * innerR);
+      ctx.lineTo(cosAngle * outerRadius, sinAngle * outerRadius);
       ctx.stroke();
     }
 
     // Zodiac ring
     const zodiacRadius = outerRadius * 0.8;
     const signs = 12;
+    const invSigns = 1 / signs;
+    const symbolAngleStep = twoPi * invSigns;
+    const inv3 = 1 / 3;
+    const innerSymbolAngleStep = twoPi * inv3;
+    
     for (let i = 0; i < signs; i++) {
-      const angle = (Math.PI * 2 * i) / signs;
-      const x = Math.cos(angle) * zodiacRadius;
-      const y = Math.sin(angle) * zodiacRadius;
+      const angle = symbolAngleStep * i;
+      // HYPER-OPTIMIZATION: Use fast trig for zodiac position
+      const x = this.fastCos(angle) * zodiacRadius;
+      const y = this.fastSin(angle) * zodiacRadius;
       const symbolSize = 25 + midIntensity * 15;
-      const hue = (this.hueBase + i * 30) % 360;
+      const hue = this.fastMod360(this.hueBase + i * 30);
 
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(angle + Math.PI / 2);
+      ctx.rotate(angle + halfPi);
 
       // Zodiac symbol (simplified as geometric shape)
-      ctx.fillStyle = `hsla(${hue}, 80%, 65%, ${0.6 + audioIntensity * 0.3})`;
-      ctx.strokeStyle = `hsla(${hue}, 85%, 70%, 0.8)`;
+      const symbolAlpha = 0.6 + audioIntensity * 0.3;
+      ctx.fillStyle = this.hsla(hue, 80, 65, symbolAlpha);
+      ctx.strokeStyle = this.hsla(hue, 85, 70, 0.8);
       ctx.lineWidth = 2;
 
       ctx.beginPath();
-      ctx.arc(0, 0, symbolSize, 0, Math.PI * 2);
+      ctx.arc(0, 0, symbolSize, 0, twoPi);
       ctx.fill();
       ctx.stroke();
 
       // Inner symbol
-      ctx.fillStyle = `hsla(${hue + 30}, 90%, 75%, 0.8)`;
+      const symbolSizeHalf = symbolSize * 0.5;
+      ctx.fillStyle = this.hsla(this.fastMod360(hue + 30), 90, 75, 0.8);
       ctx.beginPath();
       for (let j = 0; j < 3; j++) {
-        const sAngle = (Math.PI * 2 * j) / 3;
-        const sx = Math.cos(sAngle) * symbolSize * 0.5;
-        const sy = Math.sin(sAngle) * symbolSize * 0.5;
+        const sAngle = innerSymbolAngleStep * j;
+        const sx = this.fastCos(sAngle) * symbolSizeHalf;
+        const sy = this.fastSin(sAngle) * symbolSizeHalf;
         if (j === 0) ctx.moveTo(sx, sy);
         else ctx.lineTo(sx, sy);
       }
@@ -4745,29 +4782,31 @@ export class FlowFieldRenderer {
 
     // Planetary rings
     for (let ring = 1; ring <= 4; ring++) {
-      const ringRadius = outerRadius * (ring / 5);
+      const ringRadius = outerRadius * (ring * inv5);
       const planetCount = ring + 2;
+      const invPlanetCount = 1 / planetCount;
+      const planetAngleStep = twoPi * invPlanetCount;
 
-      ctx.strokeStyle = `hsla(${this.hueBase + ring * 20}, 65%, 55%, 0.3)`;
+      ctx.strokeStyle = this.hsla(this.fastMod360(this.hueBase + ring * 20), 65, 55, 0.3);
       ctx.lineWidth = 1;
       ctx.setLineDash([5, 5]);
       ctx.beginPath();
-      ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+      ctx.arc(0, 0, ringRadius, 0, twoPi);
       ctx.stroke();
       ctx.setLineDash([]);
 
       // Planets on ring
       for (let p = 0; p < planetCount; p++) {
-        const pAngle =
-          (Math.PI * 2 * p) / planetCount - this.time * 0.001 * ring;
-        const px = Math.cos(pAngle) * ringRadius;
-        const py = Math.sin(pAngle) * ringRadius;
+        const pAngle = planetAngleStep * p - timePlanet * ring;
+        // HYPER-OPTIMIZATION: Use fast trig for planet position
+        const px = this.fastCos(pAngle) * ringRadius;
+        const py = this.fastSin(pAngle) * ringRadius;
         const pSize = 6 + audioIntensity * 5;
-        const pHue = (this.hueBase + ring * 40 + p * 20) % 360;
+        const pHue = this.fastMod360(this.hueBase + ring * 40 + p * 20);
 
-        ctx.fillStyle = `hsla(${pHue}, 85%, 65%, 0.8)`;
+        ctx.fillStyle = this.hsla(pHue, 85, 65, 0.8);
         ctx.beginPath();
-        ctx.arc(px, py, pSize, 0, Math.PI * 2);
+        ctx.arc(px, py, pSize, 0, twoPi);
         ctx.fill();
       }
     }
@@ -4775,7 +4814,8 @@ export class FlowFieldRenderer {
     // Rotating pointer
     ctx.save();
     ctx.rotate(this.time * 0.002);
-    ctx.strokeStyle = `hsla(${this.hueBase + 60}, 90%, 70%, ${0.7 + audioIntensity * 0.3})`;
+    const pointerHue = this.fastMod360(this.hueBase + 60);
+    ctx.strokeStyle = this.hsla(pointerHue, 90, 70, pointerAlpha);
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
 
@@ -4785,7 +4825,7 @@ export class FlowFieldRenderer {
     ctx.stroke();
 
     // Pointer tip
-    ctx.fillStyle = `hsla(${this.hueBase + 60}, 95%, 75%, 0.9)`;
+    ctx.fillStyle = this.hsla(pointerHue, 95, 75, 0.9);
     ctx.beginPath();
     ctx.moveTo(0, -outerRadius * 0.7);
     ctx.lineTo(-10, -outerRadius * 0.7 + 20);
@@ -4796,9 +4836,9 @@ export class FlowFieldRenderer {
     ctx.restore();
 
     // Central hub
-    ctx.fillStyle = `hsla(${this.hueBase}, 80%, 60%, 0.9)`;
+    ctx.fillStyle = this.hsla(this.hueBase, 80, 60, 0.9);
     ctx.beginPath();
-    ctx.arc(0, 0, 20 + bassIntensity * 10, 0, Math.PI * 2);
+    ctx.arc(0, 0, 20 + bassIntensity * 10, 0, twoPi);
     ctx.fill();
 
     ctx.restore();
