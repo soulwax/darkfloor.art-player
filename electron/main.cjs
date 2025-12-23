@@ -1,5 +1,5 @@
 // File: electron/main.cjs
-// Load environment variables from .env.local first
+// Load environment variables from secret server or .env files
 
 const path = require("path");
 const fs = require("fs");
@@ -20,6 +20,9 @@ try {
   // dotenv not available or .env files don't exist - this is OK in production
   console.log("[Electron] dotenv not available or .env files not found (this is normal in packaged apps)");
 }
+
+// Import secret loader
+const { loadSecrets, checkServerHealth } = require("./secret-loader.cjs");
 
 const {
   app,
@@ -371,8 +374,53 @@ const registerMediaKeys = () => {
   }
 };
 
-app.whenReady().then(() => {
+/**
+ * Load secrets from secret server or fallback to .env files
+ * @returns {Promise<void>}
+ */
+async function loadRuntimeSecrets() {
+  // Check if secret server is enabled
+  const useSecretServer = process.env.USE_SECRET_SERVER === "true" || 
+                          (process.env.APP_SECRET && process.env.APP_SECRET !== "");
+  
+  if (!useSecretServer) {
+    log("Secret server not configured, using .env files");
+    return;
+  }
+
+  try {
+    log("Checking secret server availability...");
+    const isHealthy = await checkServerHealth();
+    
+    if (!isHealthy) {
+      log("Secret server not available, falling back to .env files");
+      return;
+    }
+
+    log("Loading secrets from secret server...");
+    const secrets = await loadSecrets();
+    
+    // Set secrets in process.env
+    Object.keys(secrets).forEach((key) => {
+      if (secrets[key]) {
+        process.env[key] = secrets[key];
+        log(`[Secret] Loaded ${key}`);
+      }
+    });
+    
+    log("Secrets loaded successfully from secret server");
+  } catch (error) {
+    log("Failed to load secrets from server:", error.message);
+    log("Falling back to .env files");
+    // Continue with .env files as fallback
+  }
+}
+
+app.whenReady().then(async () => {
   log("App ready");
+
+  // Load secrets from secret server before starting
+  await loadRuntimeSecrets();
 
   // Configure session persistence
   const ses = session.defaultSession;

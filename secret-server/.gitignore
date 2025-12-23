@@ -1,0 +1,5 @@
+# Secret Server - Do not commit secrets
+.env.server
+node_modules/
+*.log
+

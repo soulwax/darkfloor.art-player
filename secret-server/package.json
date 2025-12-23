@@ -1,0 +1,19 @@
+{
+  "name": "secret-keeper-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Standalone secret keeper server for Electron apps",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
+
