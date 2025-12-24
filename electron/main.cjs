@@ -240,6 +240,7 @@ const createWindow = async () => {
   log(`Mode: ${isDev ? "Development" : "Production"}`);
   log(`Packaged: ${app.isPackaged}`);
   log(`ELECTRON_PROD: ${process.env.ELECTRON_PROD}`);
+  log(`Dev Tools Enabled: ${enableDevTools}`);
   let serverUrl;
 
   if (isDev) {

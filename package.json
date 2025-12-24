@@ -78,7 +78,7 @@
     "electron:build:dev:win": "npm run electron:clean:win && node scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true ELECTRON_DEV_TOOLS=true next build\" && npm run electron:prepare && electron-builder --win --dir",
     "electron:prepare": "node scripts/load-env-build.js \"node electron/prepare-package.js\"",
     "electron:clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
-    "electron:clean:win": "rmdir /s /q dist",
+    "electron:clean:win": "if exist dist rmdir /s /q dist",
     "electron:build": "npm run electron:clean && node scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true next build\" && npm run electron:prepare && electron-builder",
     "electron:build:win": "npm run electron:clean && node scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true next build\" && npm run electron:prepare && electron-builder --win",
     "electron:build:mac": "npm run electron:clean && node scripts/load-env-build.js \"cross-env ELECTRON_BUILD=true next build\" && npm run electron:prepare && electron-builder --mac",
