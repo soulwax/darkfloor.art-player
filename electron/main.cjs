@@ -9,12 +9,17 @@ try {
   const dotenv = require("dotenv");
   const envLocalPath = path.resolve(__dirname, "../.env.local");
   const envPath = path.resolve(__dirname, "../.env");
-  
+  const standaloneEnvPath = path.resolve(__dirname, "../.next/standalone/.env");
+
   if (fs.existsSync(envLocalPath)) {
     dotenv.config({ path: envLocalPath });
   }
   if (fs.existsSync(envPath)) {
     dotenv.config({ path: envPath });
+  }
+  // Also check for .env in standalone directory (for packaged builds)
+  if (fs.existsSync(standaloneEnvPath)) {
+    dotenv.config({ path: standaloneEnvPath });
   }
 } catch (err) {
   // dotenv not available or .env files don't exist - this is OK in production
