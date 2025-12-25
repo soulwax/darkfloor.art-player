@@ -656,7 +656,7 @@ export function AudioVisualizer({
         ref={canvasRef}
         width={dimensions.width}
         height={dimensions.height}
-        onClick={cycleVisualizerType}
+        onClick={handleCanvasClick}
         className="cursor-pointer rounded-xl transition-opacity hover:opacity-95"
         style={{
           width: dimensions.width,
