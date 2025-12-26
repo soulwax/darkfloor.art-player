@@ -68,7 +68,7 @@ const config = {
   // Vercel also benefits from standalone mode for optimized bundle size
 
   // Production optimizations
-  swcMinify: true, // Use SWC for faster minification
+  // Note: swcMinify is enabled by default in Next.js 15+
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
 
@@ -87,9 +87,7 @@ const config = {
 
   // Experimental features for better performance
   experimental: {
-    // Optimize CSS
-    optimizeCss: true,
-    // Optimize package imports
+    // Optimize package imports (tree-shaking for large libraries)
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",
