@@ -12,6 +12,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useState,
   type Dispatch,
   type ReactNode,
@@ -463,64 +464,4 @@ export function useGlobalPlayer() {
     );
   }
   return context;
-}
-function useEffect(
-  _arg0: () => void,
-  _arg1: (
-    | string
-    | ((
-        message: string,
-        type?: "success" | "error" | "info",
-        duration?: number,
-      ) => void)
-    | {
-        currentTrack: Track | null;
-        queue: Track[];
-        history: Track[];
-        isPlaying: boolean;
-        currentTime: number;
-        duration: number;
-        volume: number;
-        isMuted: boolean;
-        isShuffled: boolean;
-        repeatMode: "none" | "one" | "all";
-        playbackRate: number;
-        isLoading: boolean;
-        lastAutoQueueCount: number;
-        loadTrack: (track: Track, streamUrl: string) => void;
-        play: () => Promise<void>;
-        pause: () => void;
-        togglePlay: () => Promise<void>;
-        seek: (time: number) => void;
-        playTrack: (track: Track) => Track | null;
-        playNext: () => Track | null;
-        playPrevious: () => Track | null;
-        addToQueue: (track: Track | Track[], checkDuplicates?: boolean) => void;
-        addToPlayNext: (track: Track | Track[]) => void;
-        removeFromQueue: (index: number) => void;
-        clearQueue: () => void;
-        reorderQueue: (oldIndex: number, newIndex: number) => void;
-        playFromQueue: (index: number) => Track | null;
-        toggleShuffle: () => void;
-        cycleRepeatMode: () => void;
-        setVolume: (newVolume: number) => void;
-        setIsMuted: Dispatch<SetStateAction<boolean>>;
-        setPlaybackRate: Dispatch<SetStateAction<number>>;
-        adjustVolume: (delta: number) => void;
-        skipForward: (seconds?: number) => void;
-        skipBackward: (seconds?: number) => void;
-        clearFailedTrack: (trackId: number) => void;
-        clearAllFailedTracks: () => void;
-        removeDuplicates: () => void;
-        cleanInvalidTracks: () => void;
-        cleanQueue: () => void;
-        clearQueueAndHistory: () => void;
-        isValidTrack: (track: Track | null | undefined) => track is Track;
-        audioRef: RefObject<HTMLAudioElement | null>;
-      }
-    | null
-    | undefined
-  )[],
-) {
-  throw new Error("Function not implemented.");
 }

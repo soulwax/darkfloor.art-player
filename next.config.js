@@ -68,7 +68,6 @@ const config = {
   // Vercel also benefits from standalone mode for optimized bundle size
 
   // Production optimizations
-  swcMinify: true, // Use SWC for faster minification
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
 
@@ -87,8 +86,6 @@ const config = {
 
   // Experimental features for better performance
   experimental: {
-    // Optimize CSS
-    optimizeCss: true,
     // Optimize package imports
     optimizePackageImports: [
       "lucide-react",
