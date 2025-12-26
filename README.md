@@ -34,7 +34,7 @@ The application provides:
 ## 🧱 Tech Stack
 
 | Layer | Technology | Purpose |
-|-------|-----------|---------|
+| ----- | --------- | ------- |
 | **Framework** | Next.js 15 (App Router) | Server-side rendering & routing |
 | **Language** | TypeScript | Type-safe development |
 | **Styling** | TailwindCSS v4 | Utility-first CSS framework |
@@ -161,7 +161,7 @@ src/
 ## 🎨 Design System
 
 | Element | Description |
-|---------|-------------|
+| ------- | ----------- |
 | **Cards & Buttons** | Rounded corners, flat surfaces with neon indigo borders/text |
 | **Background** | Matte deep gray gradient with subtle animated accents |
 | **Typography** | System sans-serif stack for crisp, accessible typography |
@@ -290,13 +290,16 @@ npm run lint
 ### Database Workflow
 
 #### Development (Daily Work)
+
 ```bash
 # After changing schema in src/server/db/schema.ts:
 npm run db:dev
 ```
+
 This command generates migration files and syncs your schema directly (no migration tracking).
 
 #### Production Deployment
+
 ```bash
 # 1. Generate migration files
 npm run db:generate
@@ -308,6 +311,7 @@ npm run db:migrate
 ```
 
 #### Other Database Commands
+
 ```bash
 npm run db:push      # Force sync schema (bypasses migrations)
 npm run db:studio    # Open Drizzle Studio GUI
@@ -317,7 +321,7 @@ npm run db:prod      # Helper script for production migrations
 **⚠️ Critical Rule:** Never run `db:migrate` and `db:push` together - this causes "relation already exists" errors.
 
 | Environment | Use | Command |
-|-------------|-----|---------|
+| ----- | ----- | ------- |
 | **Development** | Fast iteration | `npm run db:dev` |
 | **Production** | Tracked changes | `npm run db:migrate` |
 | **Emergency Sync** | Fix state issues | `npm run db:push` |
@@ -327,11 +331,13 @@ npm run db:prod      # Helper script for production migrations
 #### Workflow Migration Summary
 
 **Old (Problematic):**
+
 ```bash
 npm run db:generate && npm run db:migrate && npm run db:push  # ❌ Causes errors
 ```
 
 **New (Correct):**
+
 ```bash
 # Development
 npm run db:dev  # ✅ Generate + push (no tracking)
@@ -354,6 +360,7 @@ This project uses **PM2** for production process management, providing automatic
 #### Starting the Server
 
 **Production Mode:**
+
 ```bash
 # Build and start production server
 npm run pm2:start
@@ -364,6 +371,7 @@ pm2 start ecosystem.config.cjs --env production
 ```
 
 **Development Mode:**
+
 ```bash
 # Start development server with PM2
 npm run pm2:dev
@@ -405,19 +413,24 @@ pm2 restart darkfloor-art-prod --update-env
 The production server uses a **multi-layer startup process** to ensure reliability:
 
 #### 1. **PM2 Pre-Start Hook**
+
 Before starting the server, PM2 runs:
+
 ```bash
 node scripts/ensure-build.js
 ```
 
 This script:
+
 - Checks if `.next/BUILD_ID` file exists
 - Automatically runs `npm run build` if build is missing
 - Prevents crash loops by ensuring build exists before startup
 - Logs build process for debugging
 
 #### 2. **Server Script Validation**
+
 The `scripts/server.js` wrapper performs additional validation:
+
 - Verifies `.next` directory exists
 - Checks for `BUILD_ID` file (required by Next.js)
 - Validates `.next/server` directory
@@ -425,7 +438,9 @@ The `scripts/server.js` wrapper performs additional validation:
 - Prevents infinite restart loops
 
 #### 3. **Next.js Production Server**
+
 Once validation passes:
+
 - Next.js starts in production mode (`next start`)
 - Binds to configured port (uses PORT from .env, default: 3222)
 - Health check endpoint becomes available at `/api/health`
@@ -434,14 +449,18 @@ Once validation passes:
 ### Server Shutdown Mechanism
 
 #### Graceful Shutdown
+
 PM2 handles graceful shutdown through:
+
 - **SIGTERM/SIGINT signals**: PM2 sends these to the process
 - **Kill timeout**: 5 seconds grace period before force kill
 - **Next.js cleanup**: Next.js handles cleanup automatically
 - **Database pool closure**: Database connections are closed gracefully
 
 #### Force Shutdown
+
 If graceful shutdown fails:
+
 ```bash
 pm2 delete darkfloor-art-prod  # Force remove
 pm2 kill  # Kill PM2 daemon (use with caution)
@@ -450,6 +469,7 @@ pm2 kill  # Kill PM2 daemon (use with caution)
 ### Monitoring & Logs
 
 #### View Logs
+
 ```bash
 # Production logs
 npm run pm2:logs
@@ -468,6 +488,7 @@ pm2 logs darkfloor-art-prod --lines 100
 ```
 
 #### Check Status
+
 ```bash
 # List all processes
 npm run pm2:status
@@ -480,7 +501,9 @@ pm2 show darkfloor-art-prod
 ```
 
 #### Log Files
+
 Logs are stored in `logs/pm2/`:
+
 - `error.log` - Error output only
 - `out.log` - Standard output only
 - `combined.log` - All logs combined
@@ -512,6 +535,7 @@ curl http://localhost:3222/api/health
 ```
 
 PM2 is configured to:
+
 - Check health endpoint every few seconds
 - Restart process if health check fails
 - Grace period of 5 seconds after startup before health checks begin
@@ -519,12 +543,14 @@ PM2 is configured to:
 ### Automatic Restart Behavior
 
 PM2 automatically restarts the process when:
+
 - Process crashes (exit code != 0)
 - Memory exceeds 2GB (`max_memory_restart: "2G"`)
 - Health check fails (if configured)
 - Manual restart command issued
 
 **Restart Limits:**
+
 - Maximum 10 restarts within restart delay window
 - Exponential backoff prevents crash loops
 - Minimum uptime of 30 seconds before considered stable
@@ -533,13 +559,16 @@ PM2 automatically restarts the process when:
 ### Build Management
 
 #### Automatic Build Recovery
+
 If the production build is missing:
+
 1. PM2 pre-start hook detects missing BUILD_ID
 2. Automatically runs `npm run build`
 3. Server starts only if build succeeds
 4. Process exits cleanly if build fails (no crash loop)
 
 #### Manual Build
+
 ```bash
 # Build for production
 npm run build
@@ -554,11 +583,13 @@ npm run deploy
 ### Environment Configuration
 
 The server loads environment variables in this order:
+
 1. `.env` - Base configuration
 2. `.env.production` or `.env.development` - Environment-specific
 3. `.env.local` - Local overrides (never committed)
 
 **Production Environment Variables:**
+
 ```bash
 NODE_ENV=production
 PORT=3222
@@ -566,6 +597,7 @@ HOSTNAME=localhost
 ```
 
 **Development Environment Variables:**
+
 ```bash
 NODE_ENV=development
 PORT=3222  # Single port configuration - set in .env
@@ -575,24 +607,28 @@ HOSTNAME=0.0.0.0
 ### Troubleshooting Server Issues
 
 #### Process Won't Start
+
 1. Check if build exists: `test -f .next/BUILD_ID`
 2. Build manually: `npm run build`
 3. Check logs: `pm2 logs darkfloor-art-prod --err`
 4. Verify port is available: `netstat -tlnp | grep 3222`
 
 #### Process Keeps Restarting
+
 1. Check error logs: `pm2 logs --err`
 2. Verify build is complete: Check `.next/BUILD_ID` exists
 3. Check memory usage: `pm2 monit`
 4. Review restart count: `pm2 describe darkfloor-art-prod`
 
 #### Health Check Failing
+
 1. Test endpoint manually: `curl http://localhost:3222/api/health`
 2. Check database connection in health endpoint
 3. Verify server is actually running: `pm2 status`
 4. Check for port conflicts
 
 #### Build Issues
+
 1. Clear build cache: `rm -rf .next`
 2. Rebuild: `npm run build`
 3. Check for TypeScript errors: `npm run typecheck`
@@ -665,6 +701,7 @@ npm run db:push
 ```
 
 **Prevention**:
+
 - ✅ Use `npm run db:dev` in development
 - ✅ Use `npm run db:migrate` in production
 - ❌ Never run both `db:migrate` and `db:push` in the same command
