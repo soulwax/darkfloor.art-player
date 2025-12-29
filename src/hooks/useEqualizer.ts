@@ -48,6 +48,7 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const filtersRef = useRef<BiquadFilterNode[]>([]);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
 
   const [isInitialized, setIsInitialized] = useState(false);
@@ -197,12 +198,19 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
 
       filtersRef.current = filters;
 
-      // Connect nodes: source -> filters -> destination
+      // Create analyser node for visualizations
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.75;
+      analyserRef.current = analyser;
+
+      // Connect nodes: source -> filters -> analyser -> destination
       source.connect(filters[0]!);
       for (let i = 0; i < filters.length - 1; i++) {
         filters[i]!.connect(filters[i + 1]!);
       }
-      filters[filters.length - 1]!.connect(audioContext.destination);
+      filters[filters.length - 1]!.connect(analyser);
+      analyser.connect(audioContext.destination);
 
       setIsInitialized(true);
     } catch (error) {
@@ -313,17 +321,15 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
       const newState = !prev;
 
       // Disconnect/reconnect nodes
-      if (sourceRef.current && filtersRef.current.length > 0) {
+      if (sourceRef.current && filtersRef.current.length > 0 && analyserRef.current) {
         if (newState) {
-          // Re-enable: source -> filters -> destination
+          // Re-enable: source -> filters -> analyser -> destination
           sourceRef.current.disconnect();
           sourceRef.current.connect(filtersRef.current[0]!);
         } else {
-          // Disable: source -> destination (bypass filters)
+          // Disable: source -> analyser -> destination (bypass filters)
           sourceRef.current.disconnect();
-          if (audioContextRef.current) {
-            sourceRef.current.connect(audioContextRef.current.destination);
-          }
+          sourceRef.current.connect(analyserRef.current);
         }
       }
 
@@ -367,6 +373,7 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
   useEffect(() => {
     return () => {
       filtersRef.current = [];
+      analyserRef.current = null;
       if (audioContextRef.current) {
         void audioContextRef.current.close();
         audioContextRef.current = null;
@@ -387,5 +394,7 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
     reset,
     toggle,
     initialize,
+    analyser: analyserRef.current,
+    audioContext: audioContextRef.current,
   };
 }

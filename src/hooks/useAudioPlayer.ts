@@ -156,8 +156,12 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     } else {
       // No more tracks in queue, playback ends
       onTrackEnd?.(currentTrack);
-      // Keep current track at queue[0] but stop playing
+      // Clear the queue since playback is complete
+      setQueue([]);
       setIsPlaying(false);
+      console.log(
+        "[useAudioPlayer] 🏁 Playback ended, queue cleared",
+      );
     }
   }, [currentTrack, queue, repeatMode, history, onTrackEnd]);
 
@@ -549,8 +553,21 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   }, []);
 
   const pause = useCallback(() => {
-    audioRef.current?.pause();
-    setIsPlaying(false);
+    if (!audioRef.current) {
+      console.warn("[useAudioPlayer] Cannot pause: audio element not initialized");
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      audioRef.current.pause();
+      // Note: setIsPlaying(false) will be called by the 'pause' event listener
+      // But we also set it here as a backup in case the event doesn't fire
+      setIsPlaying(false);
+    } catch (error) {
+      console.error("[useAudioPlayer] Error pausing audio:", error);
+      setIsPlaying(false);
+    }
   }, []);
 
   const togglePlay = useCallback(async () => {
