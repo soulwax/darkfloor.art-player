@@ -95,6 +95,11 @@ const config = {
       "@trpc/react-query",
     ],
   },
+  // Turbopack configuration (Next.js 15.3.0+)
+  // This configures Turbopack when using --turbo flag in development
+  turbopack: {
+    
+  },
   images: {
     remotePatterns: [
       {
@@ -130,6 +135,9 @@ const config = {
     ],
     unoptimized: process.env.ELECTRON_BUILD === "true", // Required for Electron
   },
+  // Webpack configuration (only used when not using Turbopack)
+  // When using --turbo flag, this config is ignored and Turbopack is used instead
+  // The warning about webpack config with Turbopack is informational and harmless
   webpack: (config, { isServer }) => {
     // Suppress warnings/errors for Pages Router files that don't exist in App Router
     if (isServer) {

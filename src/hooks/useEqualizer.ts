@@ -7,6 +7,11 @@ import { localStorage as storage } from "@/services/storage";
 import { api } from "@/trpc/react";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  getOrCreateAudioConnection,
+  releaseAudioConnection,
+  ensureConnectionChain,
+} from "@/utils/audioContextManager";
 
 export interface EqualizerBand {
   frequency: number;
@@ -169,25 +174,17 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
     if (!audioElement || isInitialized || audioContextRef.current) return;
 
     try {
-      const AudioContext =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof window.AudioContext })
-          .webkitAudioContext;
-
-      if (!AudioContext) {
-        console.error("Web Audio API is not supported");
+      // Get or create shared audio connection
+      const connection = getOrCreateAudioConnection(audioElement);
+      if (!connection) {
+        // Audio element is already connected elsewhere - this is expected
+        // and not an error. The component will simply not initialize audio features.
         return;
       }
 
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-
-      const source = audioContext.createMediaElementSource(audioElement);
-      sourceRef.current = source;
-
       // Create filter nodes for each band
       const filters = bands.map((band) => {
-        const filter = audioContext.createBiquadFilter();
+        const filter = connection.audioContext.createBiquadFilter();
         filter.type = band.type;
         filter.frequency.value = band.frequency;
         filter.gain.value = band.gain;
@@ -196,13 +193,13 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
       });
 
       filtersRef.current = filters;
+      connection.filters = filters;
 
-      // Connect nodes: source -> filters -> destination
-      source.connect(filters[0]!);
-      for (let i = 0; i < filters.length - 1; i++) {
-        filters[i]!.connect(filters[i + 1]!);
-      }
-      filters[filters.length - 1]!.connect(audioContext.destination);
+      audioContextRef.current = connection.audioContext;
+      sourceRef.current = connection.sourceNode;
+
+      // Ensure connection chain is complete (critical for playback)
+      ensureConnectionChain(connection);
 
       setIsInitialized(true);
     } catch (error) {
@@ -366,15 +363,17 @@ export function useEqualizer(audioElement: HTMLAudioElement | null) {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      filtersRef.current = [];
-      if (audioContextRef.current) {
-        void audioContextRef.current.close();
-        audioContextRef.current = null;
+      // Release audio connection (but don't cleanup if other components are using it)
+      if (audioElement) {
+        releaseAudioConnection(audioElement);
       }
+
+      filtersRef.current = [];
+      audioContextRef.current = null;
       sourceRef.current = null;
       setIsInitialized(false);
     };
-  }, []);
+  }, [audioElement]);
 
   return {
     isInitialized,

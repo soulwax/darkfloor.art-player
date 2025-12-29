@@ -2,8 +2,8 @@
 
 "use client";
 
-import { STORAGE_KEYS } from "@/config/storage";
 import { AUDIO_CONSTANTS } from "@/config/constants";
+import { STORAGE_KEYS } from "@/config/storage";
 import { localStorage } from "@/services/storage";
 import type { SmartQueueSettings, Track } from "@/types";
 import { getStreamUrlById } from "@/utils/api";
@@ -474,7 +474,14 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
         if (!audioRef.current) return false;
 
         try {
+          console.log("[useAudioPlayer] Setting audio source:", {
+            streamUrl,
+            currentSrc: audioRef.current.src,
+            readyState: audioRef.current.readyState,
+          });
           audioRef.current.src = streamUrl;
+          audioRef.current.load(); // Explicitly load the new source
+          console.log("[useAudioPlayer] Audio source set and load() called");
           return true;
         } catch (error) {
           // Ignore abort errors - these are normal when switching tracks quickly
@@ -537,13 +544,115 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   );
 
   const play = useCallback(async () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      console.warn("[useAudioPlayer] play() called but audioRef.current is null");
+      return;
+    }
 
     try {
-      await audioRef.current.play();
+      console.log("[useAudioPlayer] Attempting to play audio", {
+        src: audioRef.current.src,
+        readyState: audioRef.current.readyState,
+        paused: audioRef.current.paused,
+        currentTime: audioRef.current.currentTime,
+      });
+
+      // If audio element is connected to Web Audio API, ensure context is resumed
+      // Check if there's a connection via the audio context manager
+      const { getAudioConnection, ensureConnectionChain } = await import("@/utils/audioContextManager");
+      const connection = getAudioConnection(audioRef.current);
+      if (connection) {
+        console.log("[useAudioPlayer] Audio connected to Web Audio API", {
+          contextState: connection.audioContext.state,
+          hasAnalyser: !!connection.analyser,
+          hasFilters: !!connection.filters,
+        });
+        
+        // CRITICAL: When an audio element is connected to MediaElementSourceNode,
+        // it MUST have a complete connection chain to destination, otherwise audio won't play.
+        // Ensure the chain is complete before attempting playback.
+        ensureConnectionChain(connection);
+        
+        if (connection.audioContext.state === "suspended") {
+          console.log("[useAudioPlayer] Resuming suspended audio context");
+          await connection.audioContext.resume();
+        }
+      } else {
+        console.log("[useAudioPlayer] Audio not connected to Web Audio API (normal playback)");
+      }
+
+      // Ensure source is loaded
+      if (!audioRef.current.src) {
+        console.warn("[useAudioPlayer] No audio source set, cannot play");
+        setIsPlaying(false);
+        return;
+      }
+
+      // Check if audio is ready to play
+      if (audioRef.current.readyState < 2) {
+        console.log("[useAudioPlayer] Audio not ready, waiting for canplay event");
+        // Wait for canplay event
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error("Audio load timeout"));
+          }, 10000);
+          
+          const handleCanPlay = () => {
+            clearTimeout(timeout);
+            audioRef.current?.removeEventListener("canplay", handleCanPlay);
+            audioRef.current?.removeEventListener("error", handleError);
+            resolve();
+          };
+          
+          const handleError = () => {
+            clearTimeout(timeout);
+            audioRef.current?.removeEventListener("canplay", handleCanPlay);
+            audioRef.current?.removeEventListener("error", handleError);
+            reject(new Error("Audio load error"));
+          };
+          
+          audioRef.current?.addEventListener("canplay", handleCanPlay, { once: true });
+          audioRef.current?.addEventListener("error", handleError, { once: true });
+        });
+      }
+
+      const playPromise = audioRef.current.play();
+      console.log("[useAudioPlayer] play() called, waiting for promise...");
+      
+      await playPromise;
+      console.log("[useAudioPlayer] Playback started successfully", {
+        paused: audioRef.current.paused,
+        currentTime: audioRef.current.currentTime,
+        readyState: audioRef.current.readyState,
+      });
+      
+      // Double-check connection chain after play
+      if (connection) {
+        console.log("[useAudioPlayer] Verifying connection chain after play...");
+        const { verifyConnectionChain } = await import("@/utils/audioContextManager");
+        const isValid = verifyConnectionChain(connection);
+        if (!isValid) {
+          console.warn("[useAudioPlayer] Connection chain invalid, rebuilding...");
+          const { ensureConnectionChain } = await import("@/utils/audioContextManager");
+          ensureConnectionChain(connection);
+        } else {
+          console.log("[useAudioPlayer] Connection chain verified");
+        }
+      }
+      
       setIsPlaying(true);
     } catch (err) {
-      console.error("Playback failed:", err);
+      console.error("[useAudioPlayer] Playback failed:", err);
+      console.error("[useAudioPlayer] Error details:", {
+        name: err instanceof Error ? err.name : "Unknown",
+        message: err instanceof Error ? err.message : String(err),
+        audioState: audioRef.current ? {
+          src: audioRef.current.src,
+          paused: audioRef.current.paused,
+          readyState: audioRef.current.readyState,
+          currentTime: audioRef.current.currentTime,
+        } : "no audio element",
+      });
       setIsPlaying(false);
     }
   }, []);
@@ -911,10 +1020,15 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     if (currentTrack && audioRef.current) {
       const streamUrl = getStreamUrlById(currentTrack.id.toString());
       // Only load if the track is different from what's currently loaded
-      if (audioRef.current.src !== streamUrl) {
+      if (audioRef.current.src !== streamUrl || !audioRef.current.src) {
+        console.log(`[useAudioPlayer] 🎶 Loading new track: ${currentTrack.title}`, {
+          streamUrl,
+          currentSrc: audioRef.current.src,
+        });
         loadTrack(currentTrack, streamUrl);
-        // Auto-play when queue changes
-        play().catch((error) => {
+        // Auto-play when queue changes - but wait a bit for source to be set and connection chain to be ready
+        setTimeout(() => {
+          play().catch((error) => {
           // Ignore abort errors - these are normal when switching tracks quickly
           if (
             error instanceof DOMException &&
@@ -928,10 +1042,17 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
             return;
           }
           console.error("Playback failed:", error);
+          });
+        }, 150); // Small delay to ensure source is set and connection chain is ready
+      } else if (!isPlaying && audioRef.current.paused) {
+        // If track is already loaded but paused, try to play it
+        console.log(`[useAudioPlayer] ▶️ Track ${currentTrack?.title} already loaded, attempting to play.`);
+        play().catch((error) => {
+          console.error("[useAudioPlayer] Playback failed on already loaded track:", error);
         });
       }
     }
-  }, [currentTrack, loadTrack, play]); // Only trigger when track ID changes
+  }, [currentTrack, loadTrack, play, isPlaying]); // Added isPlaying to dependencies
 
   // Cleanup retry timeout on unmount
   useEffect(() => {
@@ -1087,10 +1208,40 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           "[useAudioPlayer] 🔄 Track already playing, restarting from beginning",
         );
         if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch((error) => {
-            console.error("Playback failed:", error);
-          });
+          const streamUrl = getStreamUrlById(track.id.toString());
+          // Ensure audio source is set and loaded before playing
+          if (audioRef.current.src !== streamUrl || !audioRef.current.src) {
+            // Source is different or missing, reload the track
+            console.log(
+              "[useAudioPlayer] Audio source missing or different, reloading track",
+              {
+                currentSrc: audioRef.current.src,
+                expectedSrc: streamUrl,
+              },
+            );
+            loadTrack(track, streamUrl);
+          } else {
+            // Source is correct, just restart playback
+            console.log(
+              "[useAudioPlayer] Restarting playback from beginning",
+              {
+                src: audioRef.current.src,
+                currentTime: audioRef.current.currentTime,
+                paused: audioRef.current.paused,
+                readyState: audioRef.current.readyState,
+              },
+            );
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch((error) => {
+              console.error("Playback failed:", error);
+              setIsPlaying(false);
+              // If play fails, try reloading the track
+              console.log(
+                "[useAudioPlayer] Play failed, reloading track as fallback",
+              );
+              loadTrack(track, streamUrl);
+            });
+          }
         }
       } else {
         // Track is in queue but not at position 0 - use playFromQueue
@@ -1104,7 +1255,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
       return track;
     },
-    [queue, currentTrack, playFromQueue, isValidTrack],
+    [queue, currentTrack, playFromQueue, isValidTrack, loadTrack],
   );
 
   return {

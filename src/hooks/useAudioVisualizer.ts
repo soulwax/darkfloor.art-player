@@ -3,6 +3,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  getOrCreateAudioConnection,
+  releaseAudioConnection,
+  ensureConnectionChain,
+} from "@/utils/audioContextManager";
 
 export interface AudioVisualizerOptions {
   fftSize?: number; // Must be a power of 2 between 32 and 32768
@@ -37,33 +42,56 @@ export function useAudioVisualizer(
     if (!audioElement || isInitialized || audioContextRef.current) return;
 
     try {
-      // Create audio context
-      const AudioContext =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof window.AudioContext })
-          .webkitAudioContext;
-      if (!AudioContext) {
-        console.error("Web Audio API is not supported in this browser");
+      // Get or create shared audio connection
+      const connection = getOrCreateAudioConnection(audioElement);
+      if (!connection) {
+        // Audio element is already connected elsewhere - this is expected
+        // and not an error. The component will simply not initialize audio features.
         return;
       }
 
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
+      // Create analyser node with custom settings
+      // Note: We create our own analyser for custom settings, but we need to ensure
+      // the connection chain is maintained. For simplicity, we'll use the shared analyser
+      // if it exists, or create our own and ensure the chain is complete.
+      let analyser = connection.analyser;
+      if (!analyser) {
+        analyser = connection.audioContext.createAnalyser();
+        analyser.fftSize = 2048; // Use default for shared analyser
+        analyser.smoothingTimeConstant = 0.75;
+        connection.analyser = analyser;
+      }
+      
+      // Create our own analyser with custom settings for this component
+      const customAnalyser = connection.audioContext.createAnalyser();
+      customAnalyser.fftSize = fftSize;
+      customAnalyser.smoothingTimeConstant = smoothingTimeConstant;
+      customAnalyser.minDecibels = minDecibels;
+      customAnalyser.maxDecibels = maxDecibels;
+      analyserRef.current = customAnalyser;
 
-      // Create analyser node
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = fftSize;
-      analyser.smoothingTimeConstant = smoothingTimeConstant;
-      analyser.minDecibels = minDecibels;
-      analyser.maxDecibels = maxDecibels;
-      analyserRef.current = analyser;
+      // Connect our custom analyser in parallel to the shared analyser
+      // This allows us to have custom settings while maintaining the chain
+      // We'll tap into the chain after the shared analyser (if it exists) or after filters
+      try {
+        if (connection.filters && connection.filters.length > 0) {
+          const lastFilter = connection.filters[connection.filters.length - 1]!;
+          // Connect our analyser in parallel (doesn't break the chain)
+          lastFilter.connect(customAnalyser);
+        } else {
+          // Connect our analyser in parallel to source
+          connection.sourceNode.connect(customAnalyser);
+        }
+        // Don't connect customAnalyser to destination - it's just for analysis
+      } catch (error) {
+        console.error("[useAudioVisualizer] Error connecting custom analyser:", error);
+      }
 
-      // Create source and connect nodes
-      const source = audioContext.createMediaElementSource(audioElement);
-      sourceRef.current = source;
+      audioContextRef.current = connection.audioContext;
+      sourceRef.current = connection.sourceNode;
 
-      source.connect(analyser);
-      analyser.connect(audioContext.destination);
+      // Ensure connection chain is complete (critical for playback)
+      ensureConnectionChain(connection);
 
       // Initialize frequency data array
       const bufferLength = analyser.frequencyBinCount;
@@ -167,16 +195,17 @@ export function useAudioVisualizer(
     return () => {
       stopVisualization();
 
-      if (audioContextRef.current) {
-        void audioContextRef.current.close();
-        audioContextRef.current = null;
+      // Release audio connection (but don't cleanup if other components are using it)
+      if (audioElement) {
+        releaseAudioConnection(audioElement);
       }
 
+      audioContextRef.current = null;
       analyserRef.current = null;
       sourceRef.current = null;
       setIsInitialized(false);
     };
-  }, [stopVisualization]);
+  }, [stopVisualization, audioElement]);
 
   // Get audio context sample rate
   const getSampleRate = useCallback((): number => {
