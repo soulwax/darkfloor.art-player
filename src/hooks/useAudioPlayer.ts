@@ -1160,18 +1160,29 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     (seconds = 10) => {
       if (!audioRef.current) return;
 
-      seek(Math.min(duration, currentTime + seconds));
+      // Read actual time from audio element, not potentially stale state
+      const currentTime = audioRef.current.currentTime;
+      const duration = audioRef.current.duration;
+      const newTime = Math.min(duration, currentTime + seconds);
+
+      console.log(`[useAudioPlayer] ⏩ Skip forward ${seconds}s: ${currentTime.toFixed(1)}s → ${newTime.toFixed(1)}s`);
+      seek(newTime);
     },
-    [currentTime, duration, seek],
+    [seek],
   );
 
   const skipBackward = useCallback(
     (seconds = 10) => {
       if (!audioRef.current) return;
 
-      seek(Math.max(0, currentTime - seconds));
+      // Read actual time from audio element, not potentially stale state
+      const currentTime = audioRef.current.currentTime;
+      const newTime = Math.max(0, currentTime - seconds);
+
+      console.log(`[useAudioPlayer] ⏪ Skip backward ${seconds}s: ${currentTime.toFixed(1)}s → ${newTime.toFixed(1)}s`);
+      seek(newTime);
     },
-    [currentTime, seek],
+    [seek],
   );
 
   // COMMENTED OUT - Smart Queue auto-queue disabled

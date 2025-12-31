@@ -70,7 +70,7 @@ export function Equalizer({ equalizer, onClose }: EqualizerProps) {
       />
 
       {/* Compact Floating Panel */}
-      <div className="animate-in slide-in-from-right fixed top-4 right-4 z-50 max-h-[calc(100vh-180px)] w-full max-w-md duration-300 sm:top-20 sm:right-6 sm:max-w-lg">
+      <div className="animate-in slide-in-from-left fixed top-4 left-4 z-50 max-h-[calc(100vh-180px)] w-full max-w-md duration-300 sm:top-20 sm:left-6 sm:max-w-lg">
         <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-[rgba(244,178,102,0.16)] bg-[rgba(10,16,24,0.95)] shadow-[0_28px_60px_rgba(5,10,18,0.65)] backdrop-blur-xl">
           {/* Magical glow effect when enabled */}
           {equalizer.isEnabled && (
