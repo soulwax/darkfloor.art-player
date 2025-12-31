@@ -9,17 +9,18 @@
 
 /**
  * Artist entity from music service
+ * Note: picture fields may be undefined when artist data comes from album endpoints
  */
 export interface Artist {
   id: number;
   name: string;
-  link: string;
-  picture: string;
-  picture_small: string;
-  picture_medium: string;
-  picture_big: string;
-  picture_xl: string;
-  tracklist: string;
+  link?: string;
+  picture?: string;
+  picture_small?: string;
+  picture_medium?: string;
+  picture_big?: string;
+  picture_xl?: string;
+  tracklist?: string;
   type: "artist";
 }
 

@@ -70,7 +70,7 @@ export function PlaylistContextMenu() {
       if (playlist.tracks && playlist.tracks.length > 0) {
         await Promise.all(
           playlist.tracks.map((pt) =>
-            utils.client.music.addToPlaylist.mutate({
+            utils.music.addToPlaylist.mutate({
               playlistId: newPlaylist.id,
               track: pt.track,
             }),
@@ -148,7 +148,7 @@ export function PlaylistContextMenu() {
     
     // Fetch full playlist data to get all tracks (not just the 4 preview tracks)
     try {
-      const fullPlaylist = await utils.client.music.getPlaylist.fetch({ id: playlist.id });
+      const fullPlaylist = await utils.music.getPlaylist.fetch({ id: playlist.id });
       
       if (!fullPlaylist.tracks || fullPlaylist.tracks.length === 0) {
         showToast("This playlist has no tracks", "info");
@@ -182,7 +182,7 @@ export function PlaylistContextMenu() {
     
     // Fetch full playlist data to get all tracks (not just the 4 preview tracks)
     try {
-      const fullPlaylist = await utils.client.music.getPlaylist.fetch({ id: playlist.id });
+      const fullPlaylist = await utils.music.getPlaylist.fetch({ id: playlist.id });
       
       if (!fullPlaylist.tracks || fullPlaylist.tracks.length === 0) {
         showToast("This playlist has no tracks", "info");

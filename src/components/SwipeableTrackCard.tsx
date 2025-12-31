@@ -3,6 +3,7 @@
 "use client";
 
 import { useToast } from "@/contexts/ToastContext";
+import { useTrackContextMenu } from "@/contexts/TrackContextMenuContext";
 import { useWebShare } from "@/hooks/useWebShare";
 import { api } from "@/trpc/react";
 import type { Track } from "@/types";
@@ -53,6 +54,7 @@ export default function SwipeableTrackCard({
   const utils = api.useUtils();
   const { showToast } = useToast();
   const { share, isSupported: isShareSupported } = useWebShare();
+  const { openMenu } = useTrackContextMenu();
 
   const x = useMotionValue(0);
 
@@ -146,6 +148,12 @@ export default function SwipeableTrackCard({
     onPlay(track);
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    hapticLight();
+    openMenu(track, e.clientX, e.clientY);
+  };
+
   const handleDragEnd = (
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
@@ -231,6 +239,7 @@ export default function SwipeableTrackCard({
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.15}
         onDragEnd={handleDragEnd}
+        onContextMenu={handleContextMenu}
         whileTap={{ cursor: "grabbing" }}
         className="relative flex items-center gap-4 rounded-xl bg-[linear-gradient(145deg,rgba(18,27,37,0.98),rgba(11,17,24,0.98))] p-4 transition-shadow md:gap-5"
       >

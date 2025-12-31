@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, Globe, Music, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 
 import { useToast } from "@/contexts/ToastContext";
@@ -31,6 +32,7 @@ export function AddToPlaylistModal({
   const [submittingPlaylistId, setSubmittingPlaylistId] = useState<
     number | null
   >(null);
+  const [mounted, setMounted] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
   const utils = api.useUtils();
@@ -83,6 +85,12 @@ export function AddToPlaylistModal({
     );
   }, [playlists, searchQuery]);
 
+  // Track mounted state for SSR safety
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   // Auto-focus search input when modal opens
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
@@ -127,7 +135,10 @@ export function AddToPlaylistModal({
     }),
   };
 
-  return (
+  // Don't render on server or before mount
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -263,7 +274,8 @@ export function AddToPlaylistModal({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

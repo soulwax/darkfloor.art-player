@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Search Results Context Menu
+
+- **Right-Click Track Menu**: Added track context menu support to search results
+  - Right-click (or long-press on mobile) any track in search results to open context menu
+  - Full feature parity with other track displays (queue, playlists, library)
+  - Menu options: Play, Add to Queue, Play Next, Favorite, Add to Playlist, Share, Go to Artist, Go to Album
+  - Haptic feedback on menu open for better mobile experience
+  - Location: `src/components/SwipeableTrackCard.tsx:6, 57, 151-155, 242`
+
 #### Queue Multi-Select and Mass Actions
 
 - **Keyboard Navigation**: Implemented keyboard-driven multi-select for queue management
@@ -33,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Location: `src/components/EnhancedQueue.tsx:102-108, 182-193, 1034-1038`
 
 ### Fixed
+
+#### Album Track Artist Validation Error
+
+- **Add to Playlist from Album**: Fixed validation error when adding tracks from album pages to playlists
+  - Root cause: Artist objects from album endpoints lacked required picture fields (link, picture, picture_small, picture_medium, picture_big, picture_xl, tracklist)
+  - Solution: Made artist picture fields optional in both Zod schema and TypeScript type definition
+  - Album tracks now validate correctly even when artist data is incomplete
+  - Image utility functions already had fallback handling for missing artist pictures
+  - Location: `src/types/index.ts:14-25`, `src/server/api/routers/music.ts:53-64`
 
 #### Queue Track Progression (CRITICAL)
 
