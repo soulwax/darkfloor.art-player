@@ -10,10 +10,14 @@
  *   DATABASE_URL="postgresql://..." npx tsx scripts/mark-migrations-applied.ts
  */
 
-import "dotenv/config";
+import dotenv from "dotenv";
 import { readdir, readFile } from "fs/promises";
 import { join } from "path";
 import { Pool } from "pg";
+
+// Load environment variables (explicitly load .env.local)
+dotenv.config({ path: ".env.local" });
+dotenv.config(); // Also load .env as fallback
 
 const colors = {
   reset: "\x1b[0m",
